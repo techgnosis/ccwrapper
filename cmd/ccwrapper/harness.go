@@ -339,9 +339,8 @@ func (h *Harness) launch(prompt string) {
 		reader = demoF
 	} else {
 		// Real mode: clean state then launch claude CLI
-		cleanCmd := exec.Command("bash", "-c", string(cleanScript))
-		if out, err := cleanCmd.CombinedOutput(); err != nil {
-			log.Printf("clean-claude.sh: %v: %s", err, out)
+		if err := cleanClaudeState(); err != nil {
+			log.Printf("clean claude state: %v", err)
 		}
 
 		// Strip ~/.claude.json to only userID and oauthAccount
@@ -460,6 +459,48 @@ func (h *Harness) processStream(reader io.Reader) {
 	}
 }
 
+// cleanClaudeState removes ~/.claude (preserving credentials.json) and ~/.cache/claude.
+func cleanClaudeState() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	claudeDir := filepath.Join(home, ".claude")
+	credsPath := filepath.Join(claudeDir, "credentials.json")
+
+	// Back up credentials.json if it exists
+	var creds []byte
+	creds, err = os.ReadFile(credsPath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("read credentials: %w", err)
+	}
+
+	log.Println("Deleting most claude state")
+
+	if err := os.RemoveAll(claudeDir); err != nil {
+		return fmt.Errorf("remove %s: %w", claudeDir, err)
+	}
+
+	// Restore credentials.json if we backed it up
+	if creds != nil {
+		if err := os.MkdirAll(claudeDir, 0755); err != nil {
+			return fmt.Errorf("mkdir %s: %w", claudeDir, err)
+		}
+		if err := os.WriteFile(credsPath, creds, 0644); err != nil {
+			return fmt.Errorf("restore credentials: %w", err)
+		}
+	}
+
+	// Remove cache
+	cacheDir := filepath.Join(home, ".cache", "claude")
+	if err := os.RemoveAll(cacheDir); err != nil {
+		return fmt.Errorf("remove %s: %w", cacheDir, err)
+	}
+
+	return nil
+}
+
 // cleanClaudeJSON strips ~/.claude.json down to only userID and oauthAccount.
 func cleanClaudeJSON() error {
 	home, err := os.UserHomeDir()
@@ -500,7 +541,7 @@ func formatCommand(name string, args []string) string {
 	var b strings.Builder
 	b.WriteString(name)
 	for i := 0; i < len(args); i++ {
-		b.WriteString(" \\\n  ")
+		b.WriteString(" \\\n")
 		a := args[i]
 		if a == "" || strings.ContainsAny(a, " \t\n\"'\\") {
 			b.WriteByte('\'')

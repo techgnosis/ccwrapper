@@ -15,9 +15,6 @@ import (
 //go:embed web/*
 var webFS embed.FS
 
-//go:embed clean-claude.sh
-var cleanScript []byte
-
 func main() {
 	demoFile := flag.String("demo", "", "replay a stream-json file instead of launching claude")
 	flag.Parse()
