@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agentbox</title>
+  <link rel="stylesheet" href="pico.min.css">
+  <style>
+    :root {
+      --turn-bg: rgba(255,255,255,0.03);
+      --tool-bg: rgba(100,149,237,0.08);
+      --result-bg: rgba(50,205,50,0.06);
+      --error-bg: rgba(255,80,80,0.1);
+      --thinking-bg: rgba(180,130,255,0.06);
+      --collapsed-height: 3.2em;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 0.5rem 1rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      border-bottom: 1px solid var(--pico-muted-border-color);
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+
+    #prompt-input {
+      flex: 1;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    #btn-send {
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0.5rem 1rem;
+    }
+
+    #btn-stop {
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0.5rem 1rem;
+      background: var(--pico-del-color);
+      border-color: var(--pico-del-color);
+      display: none;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--pico-muted-border-color);
+      flex-shrink: 0;
+    }
+
+    .tab {
+      padding: 0.4rem 1rem;
+      cursor: pointer;
+      opacity: 0.5;
+      border-bottom: 2px solid transparent;
+      font-size: 0.85rem;
+    }
+
+    .tab.active {
+      opacity: 1;
+      border-bottom-color: var(--pico-primary);
+    }
+
+    #scroll-indicator {
+      margin-left: auto;
+      font-size: 0.75rem;
+      opacity: 0.5;
+      padding: 0.4rem 0.5rem;
+      align-self: center;
+    }
+
+    .panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 1rem;
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    /* Turns */
+    .turn {
+      margin-bottom: 0.5rem;
+      border-left: 3px solid var(--pico-muted-border-color);
+      background: var(--turn-bg);
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: max-height 0.2s ease;
+    }
+
+    .turn.collapsed {
+      max-height: var(--collapsed-height);
+    }
+
+    .turn-summary {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .turn-summary .label {
+      font-weight: 600;
+      opacity: 0.6;
+      margin-right: 0.3rem;
+    }
+
+    .turn-body {
+      padding: 0 0.6rem 0.4rem;
+    }
+
+    /* Blocks inside a turn */
+    .block {
+      margin: 0.2rem 0;
+      padding: 0.3rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .block-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .block-thinking {
+      background: var(--thinking-bg);
+      border-left: 2px solid rgba(180,130,255,0.4);
+      font-style: italic;
+      opacity: 0.7;
+    }
+
+    .block-tool {
+      background: var(--tool-bg);
+      border-left: 2px solid cornflowerblue;
+    }
+
+    .block-tool .tool-name {
+      font-weight: 600;
+      color: cornflowerblue;
+    }
+
+    .block-tool .tool-input {
+      opacity: 0.8;
+      margin-left: 0.3rem;
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.78rem;
+    }
+
+    .block-result {
+      background: var(--result-bg);
+      border-left: 2px solid limegreen;
+      margin-left: 1.5rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.78rem;
+      max-height: 20em;
+      overflow-y: auto;
+    }
+
+    .block-result.error {
+      background: var(--error-bg);
+      border-left-color: tomato;
+    }
+
+    .block-rate-limit {
+      opacity: 0.4;
+      font-size: 0.75rem;
+    }
+
+    .block-result-summary {
+      background: rgba(50,205,50,0.08);
+      border-top: 1px solid var(--pico-muted-border-color);
+      padding: 0.4rem 0.6rem;
+      font-size: 0.78rem;
+      opacity: 0.7;
+    }
+
+    .block-result-summary span {
+      margin-right: 1rem;
+    }
+
+    /* Question answering */
+    .question-input-wrap {
+      display: flex;
+      gap: 0.3rem;
+      margin-top: 0.3rem;
+    }
+
+    .question-input-wrap input {
+      flex: 1;
+      margin: 0;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.82rem;
+    }
+
+    .question-input-wrap button {
+      margin: 0;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.82rem;
+    }
+
+    /* Context tab */
+    #context-panel pre {
+      font-size: 0.78rem;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+
+    #context-panel h4 {
+      margin: 0.5rem 0 0.3rem;
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    .ctx-clear-wrap {
+      margin-bottom: 0.5rem;
+    }
+
+    .ctx-clear-wrap button {
+      padding: 0.3rem 0.8rem;
+      font-size: 0.8rem;
+    }
+
+    /* Status bar */
+    #status-bar {
+      padding: 0.2rem 1rem;
+      font-size: 0.72rem;
+      opacity: 0.5;
+      border-top: 1px solid var(--pico-muted-border-color);
+      flex-shrink: 0;
+      display: flex;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>agentbox</h1>
+    <input type="text" id="prompt-input" placeholder="Enter prompt..." autofocus>
+    <button id="btn-send">Send</button>
+    <button id="btn-stop">Stop</button>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-panel="output-panel">Output</div>
+    <div class="tab" data-panel="context-panel">Context</div>
+    <span id="scroll-indicator">scroll: on</span>
+  </div>
+
+  <div id="output-panel" class="panel active"></div>
+
+  <div id="context-panel" class="panel">
+    <div class="ctx-clear-wrap">
+      <button id="btn-clear">Clear Context</button>
+      <button id="btn-refresh-ctx">Refresh</button>
+    </div>
+    <div id="context-content"></div>
+  </div>
+
+  <div id="status-bar">
+    <span id="status-state">idle</span>
+    <span id="status-cost"></span>
+    <span id="status-tokens"></span>
+    <span id="status-duration"></span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

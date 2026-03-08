@@ -2,6 +2,8 @@
 
 PROMPT=$1
 
+./clean-claude.sh
+
 CLAUDE_CODE_SIMPLE=y claude \
 --allow-dangerously-skip-permissions \
 --dangerously-skip-permissions \
@@ -10,5 +12,4 @@ CLAUDE_CODE_SIMPLE=y claude \
 --output-format=stream-json \
 --verbose \
 --print \
--e CLAUDE_CODE_OAUTH_TOKEN \
-"$PROMPT"
+"$PROMPT" | tee example.json

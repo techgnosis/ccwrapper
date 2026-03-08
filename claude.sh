@@ -1,6 +1,6 @@
 #! /bin/bash
 
-PROMPT=$1
+./clean-claude.sh
 
 claude \
 --allow-dangerously-skip-permissions \

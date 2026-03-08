@@ -10,5 +10,4 @@ podman run \
 -v ~/.ssh:/home/claude/.ssh:ro \
 -v $(pwd):/agentbox \
 --workdir /agentbox \
--e CLAUDE_CODE_OAUTH_TOKEN \
 agentbox:1 bash

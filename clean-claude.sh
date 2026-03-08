@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+echo "Deleting most claude state"
+
 # ~/.local has Claude data that seems harmless
 
 rm -rf ~/.claude/todos
