@@ -16,6 +16,7 @@
   const stateContent = document.getElementById('state-content');
   const claudeJsonContent = document.getElementById('claude-json-content');
   const btnRefreshState = document.getElementById('btn-refresh-state');
+
   const tokenTotals = document.getElementById('token-totals');
 
   let autoScroll = true;
@@ -25,7 +26,6 @@
   let turnCount = 0;
   let pendingEl = null;
   let answerMode = false;
-  let lastInputTokens = 0;
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   let totalCost = 0;
@@ -141,7 +141,6 @@
 
   // --- State tab ---
   btnRefreshState.addEventListener('click', loadState);
-
   function loadState() {
     fetch('/api/state')
       .then(r => r.json())
@@ -179,7 +178,6 @@
         claudeJsonContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
       });
   }
-
 
   // --- Turn management ---
   function startNewTurn(prompt) {
@@ -389,7 +387,7 @@
           break;
 
         case 'result':
-          if (data.input_tokens) { lastInputTokens = data.input_tokens; totalInputTokens += data.input_tokens; }
+          if (data.input_tokens) totalInputTokens += data.input_tokens;
           if (data.output_tokens) totalOutputTokens += data.output_tokens;
           if (data.total_cost_usd) totalCost += data.total_cost_usd;
           updateTokenTotals();

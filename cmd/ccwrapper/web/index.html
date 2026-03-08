@@ -327,7 +327,7 @@
   <div class="tabs">
     <div class="tab active" data-panel="output-panel">Output</div>
     <div class="tab" data-panel="context-panel">Context</div>
-<div class="tab" data-panel="system-panel">System</div>
+    <div class="tab" data-panel="system-panel">System</div>
     <div class="tab" data-panel="command-panel">Command</div>
     <div class="tab" data-panel="state-panel">State</div>
     <span id="token-totals" style="margin-left:auto;font-size:0.75rem;opacity:0.5;padding:0.4rem 0.5rem;font-family:var(--pico-font-family-monospace);white-space:nowrap;"></span>
@@ -353,15 +353,14 @@
   </div>
 
   <div id="state-panel" class="panel">
-    <div class="ctx-clear-wrap">
-      <button id="btn-refresh-state">Refresh</button>
+    <div style="margin-bottom:0.5rem;">
+      <button id="btn-refresh-state" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
     </div>
     <div style="display:flex;gap:1rem;flex:1;min-height:0;">
       <div id="state-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;"></div>
       <div id="claude-json-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;border-left:1px solid var(--pico-muted-border-color);padding-left:1rem;"></div>
     </div>
   </div>
-
 
   <script src="app.js"></script>
 </body>

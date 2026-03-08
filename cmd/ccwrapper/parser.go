@@ -281,23 +281,11 @@ func summarizeToolInput(toolName string, raw json.RawMessage) string {
 		if cmd, ok := m["command"].(string); ok {
 			return cmd
 		}
-	case "Read":
+	case "Read", "Write", "Edit":
 		if p, ok := m["file_path"].(string); ok {
 			return p
 		}
-	case "Write":
-		if p, ok := m["file_path"].(string); ok {
-			return p
-		}
-	case "Edit":
-		if p, ok := m["file_path"].(string); ok {
-			return p
-		}
-	case "Glob":
-		if p, ok := m["pattern"].(string); ok {
-			return p
-		}
-	case "Grep":
+	case "Glob", "Grep":
 		if p, ok := m["pattern"].(string); ok {
 			return p
 		}

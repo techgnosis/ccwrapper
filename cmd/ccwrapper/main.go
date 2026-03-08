@@ -19,6 +19,14 @@ func main() {
 	demoFile := flag.String("demo", "", "replay a stream-json file instead of launching claude")
 	flag.Parse()
 
+	// Clean claude state on startup
+	if err := cleanClaudeState(); err != nil {
+		log.Printf("clean claude state on startup: %v", err)
+	}
+	if err := cleanClaudeJSON(); err != nil {
+		log.Printf("clean claude.json on startup: %v", err)
+	}
+
 	h := NewHarness()
 	if *demoFile != "" {
 		h.demoFile = *demoFile
@@ -48,8 +56,8 @@ func main() {
 	mux.HandleFunc("POST /api/stop", h.HandleStop)
 	mux.HandleFunc("POST /api/clear", h.HandleClear)
 	mux.HandleFunc("GET /api/context", h.HandleContext)
-mux.HandleFunc("GET /api/state", h.HandleState)
-mux.HandleFunc("GET /api/claude-json", h.HandleClaudeJSON)
+	mux.HandleFunc("GET /api/state", h.HandleState)
+	mux.HandleFunc("GET /api/claude-json", h.HandleClaudeJSON)
 
 	addr := "0.0.0.0:8080"
 	fmt.Printf("agentbox listening on http://%s\n", addr)

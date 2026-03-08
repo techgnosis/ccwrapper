@@ -35,12 +35,12 @@ var claudeArgs = []string{
 }
 
 type Harness struct {
-	mu          sync.Mutex
-	running     bool
-	cmd         *exec.Cmd
-	contextFile  string
-	sessionID    string
-	demoFile string // if set, replay this file instead of launching claude
+	mu             sync.Mutex
+	running        bool
+	cmd            *exec.Cmd
+	contextFile    string
+	sessionID      string
+	demoFile       string // if set, replay this file instead of launching claude
 	commandDisplay string // pre-computed command string for the Command tab
 
 	clientsMu sync.Mutex
@@ -139,14 +139,6 @@ func (h *Harness) broadcast(event UIEvent) {
 
 // HandlePrompt receives a prompt and launches claude.
 func (h *Harness) HandlePrompt(w http.ResponseWriter, r *http.Request) {
-	h.mu.Lock()
-	if h.running {
-		h.mu.Unlock()
-		http.Error(w, "already running", http.StatusConflict)
-		return
-	}
-	h.mu.Unlock()
-
 	var req struct {
 		Prompt string `json:"prompt"`
 	}
@@ -154,6 +146,15 @@ func (h *Harness) HandlePrompt(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid prompt", http.StatusBadRequest)
 		return
 	}
+
+	h.mu.Lock()
+	if h.running {
+		h.mu.Unlock()
+		http.Error(w, "already running", http.StatusConflict)
+		return
+	}
+	h.running = true
+	h.mu.Unlock()
 
 	go h.launch(req.Prompt)
 
@@ -246,6 +247,8 @@ func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 
 // HandleClaudeJSON returns the top-level fields of ~/.claude.json.
 func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	home, _ := os.UserHomeDir()
 	p := filepath.Join(home, ".claude.json")
 	fi, statErr := os.Stat(p)
@@ -255,13 +258,11 @@ func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := os.ReadFile(p)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
 	}
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid JSON: " + err.Error()})
 		return
 	}
@@ -285,22 +286,16 @@ func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	if modTime != "" {
 		summary["_lastModified"] = modTime
 	}
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(summary)
 }
 
 // HandleContext returns the current prompt context being sent to claude.
 func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
 	data, _ := os.ReadFile(h.contextFile)
-	info, _ := os.Stat(h.contextFile)
-	var sizeBytes int64
-	if info != nil {
-		sizeBytes = info.Size()
-	}
 	result := map[string]interface{}{
 		"context":    string(data),
 		"file_path":  h.contextFile,
-		"size_bytes": sizeBytes,
+		"size_bytes": len(data),
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
@@ -308,10 +303,6 @@ func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
 
 // launch runs the claude CLI (or replays a demo file) and streams output.
 func (h *Harness) launch(prompt string) {
-	h.mu.Lock()
-	h.running = true
-	h.mu.Unlock()
-
 	h.broadcast(UIEvent{Type: "status", Running: true})
 
 	defer func() {
@@ -363,7 +354,6 @@ func (h *Harness) launch(prompt string) {
 		copy(args, claudeArgs)
 		args = append(args, "--", string(ctxBytes))
 		cmd := exec.Command("claude", args...)
-		cmd.Env = os.Environ()
 
 		var stderrBuf strings.Builder
 		cmd.Stderr = &stderrBuf
@@ -432,10 +422,7 @@ func (h *Harness) processStream(reader io.Reader) {
 		}
 
 		// Small delay in demo mode for visual effect
-		h.mu.Lock()
-		isDemo := h.demoFile != ""
-		h.mu.Unlock()
-		if isDemo {
+		if h.demoFile != "" {
 			time.Sleep(150 * time.Millisecond)
 		}
 	}
@@ -466,8 +453,6 @@ func cleanClaudeState() error {
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("read credentials: %w", err)
 	}
-
-
 
 	if err := os.RemoveAll(claudeDir); err != nil {
 		return fmt.Errorf("remove %s: %w", claudeDir, err)
@@ -527,31 +512,25 @@ func cleanClaudeJSON() error {
 	return os.WriteFile(path, out, 0644)
 }
 
+// shellQuote returns s single-quoted if it contains special characters.
+func shellQuote(s string) string {
+	if s == "" || strings.ContainsAny(s, " \t\n\"'\\") {
+		return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
+	}
+	return s
+}
+
 // formatCommand builds a shell-style command string with one flag per line.
 func formatCommand(name string, args []string) string {
 	var b strings.Builder
 	b.WriteString(name)
 	for i := 0; i < len(args); i++ {
 		b.WriteString(" \\\n")
-		a := args[i]
-		if a == "" || strings.ContainsAny(a, " \t\n\"'\\") {
-			b.WriteByte('\'')
-			b.WriteString(strings.ReplaceAll(a, "'", "'\\''"))
-			b.WriteByte('\'')
-		} else {
-			b.WriteString(a)
-		}
+		b.WriteString(shellQuote(args[i]))
 		// If next arg is a value (not a flag), keep it on the same line
 		if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-			a2 := args[i+1]
 			b.WriteByte(' ')
-			if a2 == "" || strings.ContainsAny(a2, " \t\n\"'\\") {
-				b.WriteByte('\'')
-				b.WriteString(strings.ReplaceAll(a2, "'", "'\\''"))
-				b.WriteByte('\'')
-			} else {
-				b.WriteString(a2)
-			}
+			b.WriteString(shellQuote(args[i+1]))
 			i++
 		}
 	}
