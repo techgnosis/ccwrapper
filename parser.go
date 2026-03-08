@@ -21,8 +21,9 @@ type StreamEvent struct {
 	// For assistant/user messages
 	Message *Message `json:"message,omitempty"`
 
-	// For tool_result on user events
-	ToolUseResult *ToolUseResult `json:"tool_use_result,omitempty"`
+	// For tool_result on user events — can be object or string
+	RawToolUseResult json.RawMessage `json:"tool_use_result,omitempty"`
+	ToolUseResult    *ToolUseResult  `json:"-"`
 
 	// For rate_limit_event
 	RateLimitInfo *RateLimitInfo `json:"rate_limit_info,omitempty"`
@@ -58,10 +59,43 @@ type ContentBlock struct {
 	Name  string          `json:"name,omitempty"`
 	Input json.RawMessage `json:"input,omitempty"`
 
-	// tool_result (in user messages)
-	ToolUseID string `json:"tool_use_id,omitempty"`
-	Content   string `json:"content,omitempty"`
-	IsError   bool   `json:"is_error,omitempty"`
+	// tool_result (in user messages) — content can be string or array
+	ToolUseID  string `json:"tool_use_id,omitempty"`
+	ContentStr string `json:"-"`
+	IsError    bool   `json:"is_error,omitempty"`
+}
+
+func (cb *ContentBlock) UnmarshalJSON(data []byte) error {
+	type Alias ContentBlock
+	aux := &struct {
+		Content json.RawMessage `json:"content,omitempty"`
+		*Alias
+	}{Alias: (*Alias)(cb)}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	if len(aux.Content) > 0 {
+		// Try string first
+		var s string
+		if json.Unmarshal(aux.Content, &s) == nil {
+			cb.ContentStr = s
+		} else {
+			// Array of content blocks — extract text
+			var parts []struct {
+				Text string `json:"text"`
+			}
+			if json.Unmarshal(aux.Content, &parts) == nil {
+				var texts []string
+				for _, p := range parts {
+					if p.Text != "" {
+						texts = append(texts, p.Text)
+					}
+				}
+				cb.ContentStr = strings.Join(texts, "\n")
+			}
+		}
+	}
+	return nil
 }
 
 type ToolUseResult struct {
@@ -89,12 +123,24 @@ func ParseEvent(line []byte) (*StreamEvent, error) {
 	if err := json.Unmarshal(line, &ev); err != nil {
 		return nil, err
 	}
+	// Parse tool_use_result which can be an object or a string
+	if len(ev.RawToolUseResult) > 0 {
+		var tur ToolUseResult
+		if json.Unmarshal(ev.RawToolUseResult, &tur) == nil {
+			ev.ToolUseResult = &tur
+		} else {
+			var s string
+			if json.Unmarshal(ev.RawToolUseResult, &s) == nil {
+				ev.ToolUseResult = &ToolUseResult{Stdout: s}
+			}
+		}
+	}
 	return &ev, nil
 }
 
 // UIEvent is what we send to the browser via SSE.
 type UIEvent struct {
-	Type string `json:"type"` // "init", "turn_start", "text", "thinking", "tool_use", "tool_result", "rate_limit", "result", "error", "status"
+	Type string `json:"type"` // "init", "text", "thinking", "tool_use", "tool_result", "rate_limit", "result", "error", "status"
 
 	// Common
 	SessionID string `json:"session_id,omitempty"`
@@ -167,7 +213,7 @@ func TransformEvent(ev *StreamEvent) []UIEvent {
 		var events []UIEvent
 		for _, block := range ev.Message.Content {
 			if block.Type == "tool_result" {
-				content := block.Content
+				content := block.ContentStr
 				if ev.ToolUseResult != nil {
 					if ev.ToolUseResult.Stdout != "" {
 						content = ev.ToolUseResult.Stdout

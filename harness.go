@@ -252,7 +252,8 @@ func (h *Harness) launch(prompt string) {
 			"--print",
 			"--allow-dangerously-skip-permissions",
 			"--dangerously-skip-permissions",
-			string(ctxBytes),
+			"--disallowed-tools", "AskUserQuestion",
+			"--", string(ctxBytes),
 		)
 
 		var stderrBuf strings.Builder
