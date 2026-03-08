@@ -325,7 +325,7 @@ func (h *Harness) launch(prompt string) {
 			"--no-session-persistence",
 			"--mcp-config", "",
 			"--strict-mcp-config",
-			"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit",
+			"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit,Glob,Grep,EnterWorktree",
 		}
 		h.mu.Lock()
 		sp := h.systemPrompt
