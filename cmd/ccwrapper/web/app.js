@@ -16,8 +16,6 @@
   const stateContent = document.getElementById('state-content');
   const claudeJsonContent = document.getElementById('claude-json-content');
   const btnRefreshState = document.getElementById('btn-refresh-state');
-  const brContent = document.getElementById('br-content');
-  const btnRefreshBr = document.getElementById('btn-refresh-br');
   const tokenTotals = document.getElementById('token-totals');
 
   let autoScroll = true;
@@ -41,7 +39,6 @@
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'context-panel') loadContext();
       if (tab.dataset.panel === 'state-panel') loadState();
-      if (tab.dataset.panel === 'br-panel') loadBr();
     });
   });
 
@@ -183,19 +180,6 @@
       });
   }
 
-  // --- BR tab ---
-  btnRefreshBr.addEventListener('click', loadBr);
-
-  function loadBr() {
-    fetch('/api/br')
-      .then(r => r.json())
-      .then(data => {
-        brContent.textContent = data.output || '(empty)';
-      })
-      .catch(err => {
-        brContent.textContent = 'Error: ' + err.message;
-      });
-  }
 
   // --- Turn management ---
   function startNewTurn(prompt) {

@@ -50,7 +50,6 @@ func main() {
 	mux.HandleFunc("GET /api/context", h.HandleContext)
 mux.HandleFunc("GET /api/state", h.HandleState)
 mux.HandleFunc("GET /api/claude-json", h.HandleClaudeJSON)
-mux.HandleFunc("GET /api/br", h.HandleBr)
 
 	addr := "0.0.0.0:8080"
 	fmt.Printf("agentbox listening on http://%s\n", addr)

@@ -289,19 +289,6 @@ func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(summary)
 }
 
-// HandleBr runs 'br list --all' and returns the output.
-func (h *Harness) HandleBr(w http.ResponseWriter, r *http.Request) {
-	cmd := exec.Command("br", "list", "--all")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"output": fmt.Sprintf("error: %v\n%s", err, string(output))})
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"output": string(output)})
-}
-
 // HandleContext returns the current prompt context being sent to claude.
 func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
 	data, _ := os.ReadFile(h.contextFile)
