@@ -329,6 +329,7 @@
 <div class="tab" data-panel="system-panel">System</div>
     <div class="tab" data-panel="command-panel">Command</div>
     <div class="tab" data-panel="state-panel">State</div>
+    <div class="tab" data-panel="br-panel">BR</div>
     <span id="token-totals" style="margin-left:auto;font-size:0.75rem;opacity:0.5;padding:0.4rem 0.5rem;font-family:var(--pico-font-family-monospace);white-space:nowrap;"></span>
     <span id="scroll-indicator">scroll: on</span>
   </div>
@@ -356,6 +357,13 @@
       <button id="btn-refresh-state">Refresh</button>
     </div>
     <div id="state-content" style="font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;"></div>
+  </div>
+
+  <div id="br-panel" class="panel">
+    <div class="ctx-clear-wrap">
+      <button id="btn-refresh-br">Refresh</button>
+    </div>
+    <pre id="br-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(loading...)</pre>
   </div>
 
   <script src="app.js"></script>

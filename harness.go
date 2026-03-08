@@ -218,6 +218,19 @@ func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(sections)
 }
 
+// HandleBr runs 'br list --all' and returns the output.
+func (h *Harness) HandleBr(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("br", "list", "--all")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"output": fmt.Sprintf("error: %v\n%s", err, string(output))})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"output": string(output)})
+}
+
 // HandleContext returns the current prompt context being sent to claude.
 func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
 	data, _ := os.ReadFile(h.contextFile)
@@ -273,14 +286,9 @@ func (h *Harness) launch(prompt string) {
 		reader = demoF
 	} else {
 		// Real mode: clean state then launch claude CLI
-		if exePath, err := os.Executable(); err == nil {
-			cleanPath := filepath.Join(filepath.Dir(exePath), "clean-claude.sh")
-			if _, err := os.Stat(cleanPath); err == nil {
-				cleanCmd := exec.Command("bash", cleanPath)
-				if out, err := cleanCmd.CombinedOutput(); err != nil {
-					log.Printf("clean-claude.sh: %v: %s", err, out)
-				}
-			}
+		cleanCmd := exec.Command("bash", "-c", string(cleanScript))
+		if out, err := cleanCmd.CombinedOutput(); err != nil {
+			log.Printf("clean-claude.sh: %v: %s", err, out)
 		}
 
 		ctxBytes, err := os.ReadFile(h.contextFile)
@@ -302,13 +310,7 @@ func (h *Harness) launch(prompt string) {
 			"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit,Glob,Grep,EnterWorktree",
 		}
 		// Broadcast the flags for the Command tab (before appending prompt)
-		cmdDisplay := ""
-		if exePath2, err := os.Executable(); err == nil {
-			cleanPath2 := filepath.Join(filepath.Dir(exePath2), "clean-claude.sh")
-			if script, err := os.ReadFile(cleanPath2); err == nil {
-				cmdDisplay = string(script) + "\n"
-			}
-		}
+		cmdDisplay := string(cleanScript) + "\n"
 		cmdDisplay += formatCommand("claude", args)
 		h.broadcast(UIEvent{Type: "command", Content: cmdDisplay})
 

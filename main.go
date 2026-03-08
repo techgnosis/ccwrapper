@@ -15,6 +15,9 @@ import (
 //go:embed web/*
 var webFS embed.FS
 
+//go:embed clean-claude.sh
+var cleanScript []byte
+
 func main() {
 	demoFile := flag.String("demo", "", "replay a stream-json file instead of launching claude")
 	flag.Parse()
@@ -49,6 +52,7 @@ func main() {
 	mux.HandleFunc("POST /api/clear", h.HandleClear)
 	mux.HandleFunc("GET /api/context", h.HandleContext)
 mux.HandleFunc("GET /api/state", h.HandleState)
+mux.HandleFunc("GET /api/br", h.HandleBr)
 
 	addr := "0.0.0.0:8080"
 	fmt.Printf("agentbox listening on http://%s\n", addr)
