@@ -12,7 +12,6 @@
       --result-bg: rgba(50,205,50,0.06);
       --error-bg: rgba(255,80,80,0.1);
       --thinking-bg: rgba(180,130,255,0.06);
-      --collapsed-height: 3.2em;
     }
 
     body {
@@ -129,7 +128,6 @@
       border-radius: 4px;
       overflow: hidden;
       cursor: pointer;
-      transition: max-height 0.2s ease;
     }
 
     .turn.collapsed .turn-body {
@@ -220,11 +218,6 @@
       border-left-color: tomato;
     }
 
-    .block-rate-limit {
-      opacity: 0.4;
-      font-size: 0.75rem;
-    }
-
     .block-result-summary {
       background: rgba(50,205,50,0.08);
       border-top: 1px solid var(--pico-muted-border-color);
@@ -301,6 +294,15 @@
       padding: 0.3rem 0.8rem;
       font-size: 0.8rem;
     }
+
+    /* System prompt tab */
+    #system-prompt-input {
+      width: 100%;
+      min-height: 60vh;
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.82rem;
+      resize: vertical;
+    }
   </style>
 </head>
 <body>
@@ -315,6 +317,8 @@
   <div class="tabs">
     <div class="tab active" data-panel="output-panel">Output</div>
     <div class="tab" data-panel="context-panel">Context</div>
+    <div class="tab" data-panel="system-prompt-panel">System Prompt</div>
+    <div class="tab" data-panel="init-panel">Init</div>
     <span id="scroll-indicator">scroll: on</span>
   </div>
 
@@ -326,6 +330,17 @@
       <button id="btn-clear">Clear Context</button>
     </div>
     <div id="context-content"></div>
+  </div>
+
+  <div id="init-panel" class="panel">
+    <pre id="init-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no init data yet — send a prompt first)</pre>
+  </div>
+
+  <div id="system-prompt-panel" class="panel">
+    <div class="ctx-clear-wrap">
+      <button id="btn-save-sysprompt">Save</button>
+    </div>
+    <textarea id="system-prompt-input" placeholder="Enter system prompt..."></textarea>
   </div>
 
   <script src="app.js"></script>

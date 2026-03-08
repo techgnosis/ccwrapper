@@ -1,8 +1,8 @@
 (function() {
   'use strict';
 
+  const headerEl = document.querySelector('header');
   const outputPanel = document.getElementById('output-panel');
-  const contextPanel = document.getElementById('context-panel');
   const promptInput = document.getElementById('prompt-input');
   const btnSend = document.getElementById('btn-send');
   const btnStop = document.getElementById('btn-stop');
@@ -11,6 +11,9 @@
   const btnRefreshCtx = document.getElementById('btn-refresh-ctx');
   const contextContent = document.getElementById('context-content');
   const scrollIndicator = document.getElementById('scroll-indicator');
+  const systemPromptInput = document.getElementById('system-prompt-input');
+  const btnSaveSysprompt = document.getElementById('btn-save-sysprompt');
+  const initContent = document.getElementById('init-content');
 
   let autoScroll = true;
   let isRunning = false;
@@ -19,6 +22,7 @@
   let turnCount = 0;
   let pendingEl = null;
   let answerMode = false;
+  let lastInputTokens = 0;
 
   // --- Tabs ---
   document.querySelectorAll('.tab').forEach(tab => {
@@ -28,6 +32,7 @@
       tab.classList.add('active');
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'context-panel') loadContext();
+      if (tab.dataset.panel === 'system-prompt-panel') loadSystemPrompt();
     });
   });
 
@@ -118,15 +123,32 @@
       .then(data => {
         const size = data.size_bytes || 0;
         const sizeStr = size < 1024 ? size + ' B' : (size / 1024).toFixed(1) + ' KB';
+        const tokenStr = lastInputTokens ? ' · ' + lastInputTokens.toLocaleString() + ' tokens last turn' : '';
         contextContent.innerHTML =
           '<div style="font-family:var(--pico-font-family-monospace);font-size:0.78rem;opacity:0.6;margin-bottom:0.5rem">'
-          + esc(data.file_path || '') + '  (' + sizeStr + ')</div>'
+          + esc(data.file_path || '') + '  (' + sizeStr + ' · 800 KB max' + tokenStr + ')</div>'
           + '<pre>' + esc(data.context || '(empty)') + '</pre>';
       })
       .catch(err => {
         contextContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
       });
   }
+
+  // --- System prompt tab ---
+  function loadSystemPrompt() {
+    fetch('/api/system-prompt')
+      .then(r => r.json())
+      .then(data => { systemPromptInput.value = data.system_prompt || ''; })
+      .catch(() => {});
+  }
+
+  btnSaveSysprompt.addEventListener('click', () => {
+    fetch('/api/system-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system_prompt: systemPromptInput.value })
+    }).catch(() => {});
+  });
 
   // --- Turn management ---
   function startNewTurn(prompt) {
@@ -181,7 +203,7 @@
 
   function enterAnswerMode(text) {
     answerMode = true;
-    document.querySelector('header').classList.add('answer-mode');
+    headerEl.classList.add('answer-mode');
     btnCancelAnswer.style.display = 'inline-block';
     promptInput.value = text;
     promptInput.focus();
@@ -189,7 +211,7 @@
 
   function exitAnswerMode() {
     answerMode = false;
-    document.querySelector('header').classList.remove('answer-mode');
+    headerEl.classList.remove('answer-mode');
     btnCancelAnswer.style.display = 'none';
   }
 
@@ -231,11 +253,6 @@
         if (extra && extra.isError) block.classList.add('error');
         block.textContent = content;
         block.addEventListener('click', e => { e.stopPropagation(); block.classList.toggle('collapsed'); });
-        break;
-
-      case 'rate_limit':
-        block.classList.add('block-rate-limit');
-        block.textContent = 'rate_limit_event: ' + content;
         break;
 
       case 'error':
@@ -290,6 +307,15 @@
           break;
 
         case 'init':
+          let initText = '';
+          if (data.session_id) initText += 'session_id: ' + data.session_id + '\n';
+          if (data.model) initText += 'model: ' + data.model + '\n';
+          if (data.cwd) initText += 'cwd: ' + data.cwd + '\n';
+          if (data.tools && data.tools.length) {
+            initText += '\ntools (' + data.tools.length + '):\n';
+            data.tools.forEach(t => { initText += '  ' + t + '\n'; });
+          }
+          initContent.textContent = initText;
           break;
 
         case 'text':
@@ -322,6 +348,7 @@
           break;
 
         case 'result':
+          if (data.input_tokens) lastInputTokens = data.input_tokens;
           if (currentTurn) {
             let summaryHTML = '';
             if (data.stop_reason) summaryHTML += '<span>stop_reason: ' + esc(data.stop_reason) + '</span>';

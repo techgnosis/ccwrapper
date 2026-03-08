@@ -166,8 +166,9 @@ type UIEvent struct {
 	OutputTokens int     `json:"output_tokens,omitempty"`
 
 	// For init
-	Model string `json:"model,omitempty"`
-	CWD   string `json:"cwd,omitempty"`
+	Model string   `json:"model,omitempty"`
+	CWD   string   `json:"cwd,omitempty"`
+	Tools []string `json:"tools,omitempty"`
 
 	// For status
 	Running bool `json:"running,omitempty"`
@@ -182,6 +183,7 @@ func TransformEvent(ev *StreamEvent) []UIEvent {
 			SessionID: ev.SessionID,
 			Model:     ev.Model,
 			CWD:       ev.CWD,
+			Tools:     ev.Tools,
 		}}
 
 	case "assistant":
@@ -253,7 +255,7 @@ func TransformEvent(ev *StreamEvent) []UIEvent {
 			IsError:      ev.IsError,
 		}
 		if ev.Usage != nil {
-			ui.InputTokens = ev.Usage.InputTokens
+			ui.InputTokens = ev.Usage.InputTokens + ev.Usage.CacheReadInputTokens + ev.Usage.CacheCreationInputTokens
 			ui.OutputTokens = ev.Usage.OutputTokens
 		}
 		return []UIEvent{ui}

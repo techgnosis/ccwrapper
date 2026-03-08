@@ -24,9 +24,10 @@ type Harness struct {
 	mu          sync.Mutex
 	running     bool
 	cmd         *exec.Cmd
-	contextFile string
-	sessionID   string
-	demoFile    string // if set, replay this file instead of launching claude
+	contextFile  string
+	sessionID    string
+	systemPrompt string
+	demoFile     string // if set, replay this file instead of launching claude
 
 	clientsMu sync.Mutex
 	clients   map[*sseClient]struct{}
@@ -192,6 +193,31 @@ func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+// HandleGetSystemPrompt returns the current system prompt.
+func (h *Harness) HandleGetSystemPrompt(w http.ResponseWriter, r *http.Request) {
+	h.mu.Lock()
+	sp := h.systemPrompt
+	h.mu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"system_prompt": sp})
+}
+
+// HandleSetSystemPrompt sets the system prompt.
+func (h *Harness) HandleSetSystemPrompt(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		SystemPrompt string `json:"system_prompt"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	h.mu.Lock()
+	h.systemPrompt = req.SystemPrompt
+	h.mu.Unlock()
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "saved"})
+}
+
 // launch runs the claude CLI (or replays a demo file) and streams output.
 func (h *Harness) launch(prompt string) {
 	h.mu.Lock()
@@ -246,15 +272,22 @@ func (h *Harness) launch(prompt string) {
 			return
 		}
 
-		cmd := exec.Command("claude",
+		args := []string{
 			"--output-format", "stream-json",
 			"--verbose",
 			"--print",
 			"--allow-dangerously-skip-permissions",
 			"--dangerously-skip-permissions",
-			"--disallowed-tools", "AskUserQuestion",
-			"--", string(ctxBytes),
-		)
+			"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit",
+		}
+		h.mu.Lock()
+		sp := h.systemPrompt
+		h.mu.Unlock()
+		if sp != "" {
+			args = append(args, "--system-prompt", sp)
+		}
+		args = append(args, "--", string(ctxBytes))
+		cmd := exec.Command("claude", args...)
 
 		var stderrBuf strings.Builder
 		cmd.Stderr = &stderrBuf
