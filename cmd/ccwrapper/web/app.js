@@ -216,6 +216,7 @@
 
   function collapseTurn(turn) {
     if (!turn) return;
+    turn.classList.add('collapsed');
     addAnswerButton(turn);
   }
 
