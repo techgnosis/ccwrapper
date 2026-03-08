@@ -128,10 +128,9 @@
       .then(data => {
         const size = data.size_bytes || 0;
         const sizeStr = size < 1024 ? size + ' B' : (size / 1024).toFixed(1) + ' KB';
-        const tokenStr = lastInputTokens ? ' · ' + lastInputTokens.toLocaleString() + ' tokens last turn' : '';
         contextContent.innerHTML =
           '<div style="font-family:var(--pico-font-family-monospace);font-size:0.78rem;opacity:0.6;margin-bottom:0.5rem">'
-          + esc(data.file_path || '') + '  (' + sizeStr + ' · 800 KB max' + tokenStr + ')</div>'
+          + esc(data.file_path || '') + '  (' + sizeStr + ')</div>'
           + '<pre>' + esc(data.context || '(empty)') + '</pre>';
       })
       .catch(err => {
