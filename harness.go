@@ -180,23 +180,30 @@ func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 	home, _ := os.UserHomeDir()
 	paths := []string{
 		filepath.Join(home, ".claude"),
-		filepath.Join(home, ".claude.json"),
 		filepath.Join(home, ".cache"),
 	}
 	sections := make([]map[string]string, 0, len(paths))
 	for _, p := range paths {
+		displayPath := strings.Replace(p, home, "~", 1)
 		info, err := os.Stat(p)
 		if err != nil {
-			sections = append(sections, map[string]string{"path": p, "content": "(not found)"})
+			sections = append(sections, map[string]string{"path": displayPath, "content": "(not found)"})
 			continue
 		}
+		section := map[string]string{"path": displayPath}
+		// Include creation time if available
+		if ct := getCreationTime(info); !ct.IsZero() {
+			section["created"] = ct.Format(time.RFC3339)
+		}
 		if !info.IsDir() {
-			sections = append(sections, map[string]string{"path": p, "content": fmt.Sprintf("%s  %d bytes", info.Name(), info.Size())})
+			section["content"] = fmt.Sprintf("%s  %d bytes", info.Name(), info.Size())
+			sections = append(sections, section)
 			continue
 		}
 		entries, err := os.ReadDir(p)
 		if err != nil {
-			sections = append(sections, map[string]string{"path": p, "content": "(unreadable: " + err.Error() + ")"})
+			section["content"] = "(unreadable: " + err.Error() + ")"
+			sections = append(sections, section)
 			continue
 		}
 		var b strings.Builder
@@ -209,13 +216,59 @@ func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if b.Len() == 0 {
-			sections = append(sections, map[string]string{"path": p, "content": "(empty)"})
+			section["content"] = "(empty)"
 		} else {
-			sections = append(sections, map[string]string{"path": p, "content": b.String()})
+			section["content"] = b.String()
 		}
+		sections = append(sections, section)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(sections)
+}
+
+// HandleClaudeJSON returns the top-level fields of ~/.claude.json.
+func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
+	home, _ := os.UserHomeDir()
+	p := filepath.Join(home, ".claude.json")
+	fi, statErr := os.Stat(p)
+	var modTime string
+	if statErr == nil {
+		modTime = fi.ModTime().Format(time.RFC3339)
+	}
+	data, err := os.ReadFile(p)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+	// Build summary: for each top-level key, show a short representation
+	summary := make(map[string]interface{}, len(raw))
+	for k, v := range raw {
+		var parsed interface{}
+		if err := json.Unmarshal(v, &parsed); err == nil {
+			switch val := parsed.(type) {
+			case map[string]interface{}:
+				summary[k] = fmt.Sprintf("{...} (%d keys)", len(val))
+			case []interface{}:
+				summary[k] = fmt.Sprintf("[...] (%d items)", len(val))
+			default:
+				summary[k] = val
+			}
+		} else {
+			summary[k] = string(v)
+		}
+	}
+	if modTime != "" {
+		summary["_lastModified"] = modTime
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(summary)
 }
 
 // HandleBr runs 'br list --all' and returns the output.

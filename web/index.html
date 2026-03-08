@@ -356,7 +356,10 @@
     <div class="ctx-clear-wrap">
       <button id="btn-refresh-state">Refresh</button>
     </div>
-    <div id="state-content" style="font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;"></div>
+    <div style="display:flex;gap:1rem;flex:1;min-height:0;">
+      <div id="state-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;"></div>
+      <div id="claude-json-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;border-left:1px solid var(--pico-muted-border-color);padding-left:1rem;"></div>
+    </div>
   </div>
 
   <div id="br-panel" class="panel">

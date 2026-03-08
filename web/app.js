@@ -14,6 +14,7 @@
   const systemContent = document.getElementById('system-content');
   const commandContent = document.getElementById('command-content');
   const stateContent = document.getElementById('state-content');
+  const claudeJsonContent = document.getElementById('claude-json-content');
   const btnRefreshState = document.getElementById('btn-refresh-state');
   const brContent = document.getElementById('br-content');
   const btnRefreshBr = document.getElementById('btn-refresh-br');
@@ -148,12 +149,37 @@
     fetch('/api/state')
       .then(r => r.json())
       .then(sections => {
-        stateContent.innerHTML = sections.map(s =>
-          '<strong>' + esc(s.path) + '</strong>\n' + esc(s.content)
-        ).join('\n\n');
+        stateContent.innerHTML = sections.map(s => {
+          var header = '<strong>' + esc(s.path) + '</strong>';
+          if (s.created && !s.path.endsWith('.cache')) {
+            header += '  <span style="opacity:0.5;font-size:0.72rem;">created: ' + esc(new Date(s.created).toLocaleString()) + '</span>';
+          }
+          return header + '\n' + esc(s.content);
+        }).join('\n\n');
       })
       .catch(err => {
         stateContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
+      });
+    fetch('/api/claude-json')
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          claudeJsonContent.innerHTML = '<strong>~/.claude.json</strong>\n' + esc(data.error);
+          return;
+        }
+        var modTime = data._lastModified || '';
+        var header = '<strong>~/.claude.json</strong>';
+        if (modTime) {
+          header += '  <span style="opacity:0.5;font-size:0.72rem;">modified: ' + esc(new Date(modTime).toLocaleString()) + '</span>';
+        }
+        var lines = Object.keys(data).sort().filter(k => k !== '_lastModified').map(k => {
+          var val = typeof data[k] === 'string' ? data[k] : JSON.stringify(data[k]);
+          return '<strong>' + esc(k) + '</strong>: ' + esc(val);
+        });
+        claudeJsonContent.innerHTML = header + '\n\n' + lines.join('\n');
+      })
+      .catch(err => {
+        claudeJsonContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
       });
   }
 

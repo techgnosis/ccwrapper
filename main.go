@@ -52,6 +52,7 @@ func main() {
 	mux.HandleFunc("POST /api/clear", h.HandleClear)
 	mux.HandleFunc("GET /api/context", h.HandleContext)
 mux.HandleFunc("GET /api/state", h.HandleState)
+mux.HandleFunc("GET /api/claude-json", h.HandleClaudeJSON)
 mux.HandleFunc("GET /api/br", h.HandleBr)
 
 	addr := "0.0.0.0:8080"
