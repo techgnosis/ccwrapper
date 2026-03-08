@@ -20,6 +20,20 @@ type sseClient struct {
 	done   chan struct{}
 }
 
+// claudeArgs are the fixed flags passed to every claude invocation.
+var claudeArgs = []string{
+	"--output-format", "stream-json",
+	"--verbose",
+	"--print",
+	"--allow-dangerously-skip-permissions",
+	"--dangerously-skip-permissions",
+	"--disable-slash-commands",
+	"--no-session-persistence",
+	"--mcp-config", "",
+	"--strict-mcp-config",
+	"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit,EnterWorktree",
+}
+
 type Harness struct {
 	mu          sync.Mutex
 	running     bool
@@ -27,6 +41,7 @@ type Harness struct {
 	contextFile  string
 	sessionID    string
 	demoFile string // if set, replay this file instead of launching claude
+	commandDisplay string // pre-computed command string for the Command tab
 
 	clientsMu sync.Mutex
 	clients   map[*sseClient]struct{}
@@ -40,8 +55,9 @@ func NewHarness() *Harness {
 	tmpFile.Close()
 
 	return &Harness{
-		contextFile: tmpFile.Name(),
-		clients:     make(map[*sseClient]struct{}),
+		contextFile:    tmpFile.Name(),
+		clients:        make(map[*sseClient]struct{}),
+		commandDisplay: formatCommand("claude", claudeArgs),
 	}
 }
 
@@ -83,12 +99,14 @@ func (h *Harness) HandleSSE(w http.ResponseWriter, r *http.Request) {
 		close(client.done)
 	}()
 
-	// Send current status
+	// Send current status and command
 	h.mu.Lock()
 	running := h.running
 	h.mu.Unlock()
 	statusJSON, _ := json.Marshal(UIEvent{Type: "status", Running: running})
 	fmt.Fprintf(w, "data: %s\n\n", statusJSON)
+	cmdJSON, _ := json.Marshal(UIEvent{Type: "command", Content: h.commandDisplay})
+	fmt.Fprintf(w, "data: %s\n\n", cmdJSON)
 	flusher.Flush()
 
 	for {
@@ -354,22 +372,8 @@ func (h *Harness) launch(prompt string) {
 			return
 		}
 
-		args := []string{
-			"--output-format", "stream-json",
-			"--verbose",
-			"--print",
-			"--allow-dangerously-skip-permissions",
-			"--dangerously-skip-permissions",
-			"--disable-slash-commands",
-			"--no-session-persistence",
-			"--mcp-config", "",
-			"--strict-mcp-config",
-			"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit,Glob,Grep,EnterWorktree",
-		}
-		// Broadcast the flags for the Command tab (before appending prompt)
-		cmdDisplay := formatCommand("claude", args)
-		h.broadcast(UIEvent{Type: "command", Content: cmdDisplay})
-
+		args := make([]string, len(claudeArgs))
+		copy(args, claudeArgs)
 		args = append(args, "--", string(ctxBytes))
 		cmd := exec.Command("claude", args...)
 		cmd.Env = os.Environ()
