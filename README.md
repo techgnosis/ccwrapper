@@ -20,6 +20,7 @@ This simulates multi-turn conversation across separate single-shot CLI invocatio
 - **Context tab** — view and clear the accumulated transcript that gets sent as the prompt
 - **System Prompt tab** — set a custom system prompt for all subsequent runs
 - **System tab** — raw JSON of Claude's system init event (model, tools, session info, etc.)
+- **State tab** — directory listings for `~/.claude/`, `~/.claude.json`, and `~/.cache/` to inspect Claude config state
 - **Command tab** — the exact `claude` CLI invocation that was run, with all flags
 - **Token totals** — running input/output token counts and cost in the tab bar
 - **Answer Question** — click on a completed turn to load the assistant's text into the prompt for editing and re-sending
@@ -30,12 +31,9 @@ This simulates multi-turn conversation across separate single-shot CLI invocatio
 Requires Go 1.25+. The `web/` directory is embedded into the binary.
 
 ```bash
-# Linux
-go build -o ccwrapper .
-
-# macOS
-GOOS=darwin GOARCH=arm64 go build -o ccwrapper-darwin-arm64 .
-GOOS=darwin GOARCH=amd64 go build -o ccwrapper-darwin-amd64 .
+make build
+# or directly:
+GOOS=darwin GOARCH=arm64 go build .
 ```
 
 ## Running
@@ -51,15 +49,11 @@ GOOS=darwin GOARCH=amd64 go build -o ccwrapper-darwin-amd64 .
 
 ## Container
 
+The `Containerfile` sets up Alpine with Go, the Claude CLI, and [beads_rust](https://github.com/Dicklesworthstone/beads_rust) for issue tracking.
+
 ```bash
-# Build the container image
-./build-env.sh
-
-# Launch an interactive shell in the container
-./launch-env.sh
+docker build -f Containerfile -t ccwrapper .
 ```
-
-The Containerfile sets up Alpine with Go, the Claude CLI, and [beads_rust](https://github.com/Dicklesworthstone/beads_rust) for issue tracking.
 
 ## Claude CLI flags
 
@@ -68,7 +62,7 @@ ccwrapper launches Claude with these flags:
 - `--print` — non-interactive single-shot mode
 - `--output-format stream-json` — structured streaming output
 - `--verbose` — include thinking blocks
-- `--dangerously-skip-permissions` — no permission prompts
+- `--allow-dangerously-skip-permissions` / `--dangerously-skip-permissions` — no permission prompts
 - `--disable-slash-commands` — no slash command processing
 - `--no-session-persistence` — don't persist session state
 - `--mcp-config ""` / `--strict-mcp-config` — disable MCP servers
