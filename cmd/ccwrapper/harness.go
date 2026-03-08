@@ -480,7 +480,7 @@ func cleanClaudeState() error {
 		return fmt.Errorf("read credentials: %w", err)
 	}
 
-	log.Println("Deleting most claude state")
+
 
 	if err := os.RemoveAll(claudeDir); err != nil {
 		return fmt.Errorf("remove %s: %w", claudeDir, err)
