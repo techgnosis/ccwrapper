@@ -50,6 +50,7 @@ func main() {
 	mux.HandleFunc("GET /api/context", h.HandleContext)
 	mux.HandleFunc("GET /api/system-prompt", h.HandleGetSystemPrompt)
 	mux.HandleFunc("POST /api/system-prompt", h.HandleSetSystemPrompt)
+	mux.HandleFunc("GET /api/state", h.HandleState)
 
 	addr := "0.0.0.0:8080"
 	fmt.Printf("agentbox listening on http://%s\n", addr)

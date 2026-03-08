@@ -15,6 +15,8 @@
   const btnSaveSysprompt = document.getElementById('btn-save-sysprompt');
   const systemContent = document.getElementById('system-content');
   const commandContent = document.getElementById('command-content');
+  const stateContent = document.getElementById('state-content');
+  const btnRefreshState = document.getElementById('btn-refresh-state');
   const tokenTotals = document.getElementById('token-totals');
 
   let autoScroll = true;
@@ -38,6 +40,7 @@
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'context-panel') loadContext();
       if (tab.dataset.panel === 'system-prompt-panel') loadSystemPrompt();
+      if (tab.dataset.panel === 'state-panel') loadState();
     });
   });
 
@@ -136,6 +139,22 @@
       })
       .catch(err => {
         contextContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
+      });
+  }
+
+  // --- State tab ---
+  btnRefreshState.addEventListener('click', loadState);
+
+  function loadState() {
+    fetch('/api/state')
+      .then(r => r.json())
+      .then(sections => {
+        stateContent.innerHTML = sections.map(s =>
+          '<strong>' + esc(s.path) + '</strong>\n' + esc(s.content)
+        ).join('\n\n');
+      })
+      .catch(err => {
+        stateContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
       });
   }
 

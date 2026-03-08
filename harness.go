@@ -176,6 +176,49 @@ func (h *Harness) HandleClear(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "cleared"})
 }
 
+// HandleState returns directory listings for Claude-related paths.
+func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
+	home, _ := os.UserHomeDir()
+	paths := []string{
+		filepath.Join(home, ".claude"),
+		filepath.Join(home, ".claude.json"),
+		filepath.Join(home, ".cache"),
+	}
+	sections := make([]map[string]string, 0, len(paths))
+	for _, p := range paths {
+		info, err := os.Stat(p)
+		if err != nil {
+			sections = append(sections, map[string]string{"path": p, "content": "(not found)"})
+			continue
+		}
+		if !info.IsDir() {
+			sections = append(sections, map[string]string{"path": p, "content": fmt.Sprintf("%s  %d bytes", info.Name(), info.Size())})
+			continue
+		}
+		entries, err := os.ReadDir(p)
+		if err != nil {
+			sections = append(sections, map[string]string{"path": p, "content": "(unreadable: " + err.Error() + ")"})
+			continue
+		}
+		var b strings.Builder
+		for _, e := range entries {
+			ei, _ := e.Info()
+			if ei != nil {
+				fmt.Fprintf(&b, "%s  %s  %d\n", ei.Mode(), e.Name(), ei.Size())
+			} else {
+				fmt.Fprintf(&b, "%s\n", e.Name())
+			}
+		}
+		if b.Len() == 0 {
+			sections = append(sections, map[string]string{"path": p, "content": "(empty)"})
+		} else {
+			sections = append(sections, map[string]string{"path": p, "content": b.String()})
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sections)
+}
+
 // HandleContext returns the current prompt context being sent to claude.
 func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
 	data, _ := os.ReadFile(h.contextFile)
@@ -291,7 +334,15 @@ func (h *Harness) launch(prompt string) {
 			args = append(args, "--system-prompt", sp)
 		}
 		// Broadcast the flags for the Command tab (before appending prompt)
-		h.broadcast(UIEvent{Type: "command", Content: "CLAUDE_CODE_SIMPLE=y " + formatCommand("claude", args)})
+		cmdDisplay := ""
+		if exePath2, err := os.Executable(); err == nil {
+			cleanPath2 := filepath.Join(filepath.Dir(exePath2), "clean-claude.sh")
+			if script, err := os.ReadFile(cleanPath2); err == nil {
+				cmdDisplay = string(script) + "\n"
+			}
+		}
+		cmdDisplay += "CLAUDE_CODE_SIMPLE=y " + formatCommand("claude", args)
+		h.broadcast(UIEvent{Type: "command", Content: cmdDisplay})
 
 		args = append(args, "--", string(ctxBytes))
 		cmd := exec.Command("claude", args...)
