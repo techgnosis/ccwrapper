@@ -214,7 +214,7 @@ func (h *Harness) launch(prompt string) {
 		h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("context file error: %v", err)})
 		return
 	}
-	fmt.Fprintf(f, "User: %s\n", prompt)
+	fmt.Fprintf(f, "User: %s\n\n", prompt)
 	f.Close()
 
 	var reader io.Reader

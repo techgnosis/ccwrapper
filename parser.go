@@ -275,8 +275,8 @@ func BuildContextEntry(ev *StreamEvent) string {
 		for _, block := range ev.Message.Content {
 			switch block.Type {
 			case "text":
-				if block.Text != "" {
-					parts = append(parts, block.Text)
+				if t := strings.TrimSpace(block.Text); t != "" {
+					parts = append(parts, t)
 				}
 			case "tool_use":
 				parts = append(parts, fmt.Sprintf("Tool(%s): %s", block.Name, summarizeToolInput(block.Name, block.Input)))
@@ -284,7 +284,7 @@ func BuildContextEntry(ev *StreamEvent) string {
 			// Skip thinking blocks from context
 		}
 		if len(parts) > 0 {
-			return "Assistant: " + strings.Join(parts, "\n") + "\n"
+			return "Assistant: " + strings.Join(parts, "\n") + "\n\n"
 		}
 
 	case "user":
@@ -299,7 +299,7 @@ func BuildContextEntry(ev *StreamEvent) string {
 		if len(lines) > 3 {
 			lines = append(lines[:3], "...")
 		}
-		return "Result: " + strings.Join(lines, "\n") + "\n"
+		return "Result: " + strings.Join(lines, "\n") + "\n\n"
 	}
 	return ""
 }

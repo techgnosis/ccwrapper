@@ -44,6 +44,21 @@
       flex: 1;
       margin: 0;
       font-size: 0.9rem;
+      resize: none;
+      overflow: hidden;
+      height: 2.5rem;
+    }
+
+    header.answer-mode {
+      align-items: flex-start;
+    }
+
+    header.answer-mode #prompt-input {
+      height: 50vh;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.82rem;
     }
 
     #btn-send {
@@ -58,6 +73,13 @@
       padding: 0.5rem 1rem;
       background: var(--pico-del-color);
       border-color: var(--pico-del-color);
+      display: none;
+    }
+
+    #btn-cancel-answer {
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0.5rem 1rem;
       display: none;
     }
 
@@ -230,6 +252,19 @@
       50% { opacity: 0.6; }
     }
 
+    /* Answer Question button */
+    .btn-answer {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      margin: 0.3rem 0.6rem;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+
+    .btn-answer:hover {
+      opacity: 1;
+    }
+
     /* Context cleared divider */
     .context-cleared {
       text-align: center;
@@ -271,9 +306,10 @@
 <body>
   <header>
     <h1>agentbox</h1>
-    <input type="text" id="prompt-input" placeholder="Enter prompt..." autofocus>
+    <textarea id="prompt-input" rows="1" placeholder="Enter prompt..." autofocus></textarea>
     <button id="btn-send">Send</button>
     <button id="btn-stop">Stop</button>
+    <button id="btn-cancel-answer">Cancel</button>
   </header>
 
   <div class="tabs">

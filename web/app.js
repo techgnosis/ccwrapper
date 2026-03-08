@@ -7,6 +7,7 @@
   const btnSend = document.getElementById('btn-send');
   const btnStop = document.getElementById('btn-stop');
   const btnClear = document.getElementById('btn-clear');
+  const btnCancelAnswer = document.getElementById('btn-cancel-answer');
   const btnRefreshCtx = document.getElementById('btn-refresh-ctx');
   const contextContent = document.getElementById('context-content');
   const scrollIndicator = document.getElementById('scroll-indicator');
@@ -17,6 +18,7 @@
   let currentPrompt = null;
   let turnCount = 0;
   let pendingEl = null;
+  let answerMode = false;
 
   // --- Tabs ---
   document.querySelectorAll('.tab').forEach(tab => {
@@ -63,7 +65,7 @@
   // --- Send prompt ---
   btnSend.addEventListener('click', sendPrompt);
   promptInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !answerMode) {
       e.preventDefault();
       sendPrompt();
     }
@@ -75,6 +77,7 @@
 
     currentPrompt = prompt;
     promptInput.value = '';
+    exitAnswerMode();
 
     startNewTurn(prompt);
 
@@ -153,7 +156,47 @@
   function collapseTurn(turn) {
     if (!turn) return;
     turn.classList.add('collapsed');
+    addAnswerButton(turn);
   }
+
+  function addAnswerButton(turn) {
+    if (turn.querySelector('.btn-answer')) return;
+    const textBlocks = turn.querySelectorAll('.block-text');
+    if (textBlocks.length === 0) return;
+
+    // Gather all text content from the turn
+    let fullText = '';
+    textBlocks.forEach(b => { fullText += b.textContent + '\n'; });
+    fullText = fullText.trimEnd();
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-answer';
+    btn.textContent = 'Answer Question';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      enterAnswerMode(fullText);
+    });
+    turn.appendChild(btn);
+  }
+
+  function enterAnswerMode(text) {
+    answerMode = true;
+    document.querySelector('header').classList.add('answer-mode');
+    btnCancelAnswer.style.display = 'inline-block';
+    promptInput.value = text;
+    promptInput.focus();
+  }
+
+  function exitAnswerMode() {
+    answerMode = false;
+    document.querySelector('header').classList.remove('answer-mode');
+    btnCancelAnswer.style.display = 'none';
+  }
+
+  btnCancelAnswer.addEventListener('click', () => {
+    promptInput.value = '';
+    exitAnswerMode();
+  });
 
   function addBlock(turn, type, content, extra) {
     if (!turn) return;
