@@ -11,8 +11,6 @@
   const btnRefreshCtx = document.getElementById('btn-refresh-ctx');
   const contextContent = document.getElementById('context-content');
   const scrollIndicator = document.getElementById('scroll-indicator');
-  const systemPromptInput = document.getElementById('system-prompt-input');
-  const btnSaveSysprompt = document.getElementById('btn-save-sysprompt');
   const systemContent = document.getElementById('system-content');
   const commandContent = document.getElementById('command-content');
   const stateContent = document.getElementById('state-content');
@@ -39,7 +37,6 @@
       tab.classList.add('active');
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'context-panel') loadContext();
-      if (tab.dataset.panel === 'system-prompt-panel') loadSystemPrompt();
       if (tab.dataset.panel === 'state-panel') loadState();
     });
   });
@@ -157,22 +154,6 @@
         stateContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
       });
   }
-
-  // --- System prompt tab ---
-  function loadSystemPrompt() {
-    fetch('/api/system-prompt')
-      .then(r => r.json())
-      .then(data => { systemPromptInput.value = data.system_prompt || ''; })
-      .catch(() => {});
-  }
-
-  btnSaveSysprompt.addEventListener('click', () => {
-    fetch('/api/system-prompt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system_prompt: systemPromptInput.value })
-    }).catch(() => {});
-  });
 
   // --- Turn management ---
   function startNewTurn(prompt) {

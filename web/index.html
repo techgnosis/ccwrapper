@@ -295,14 +295,6 @@
       font-size: 0.8rem;
     }
 
-    /* System prompt tab */
-    #system-prompt-input {
-      width: 100%;
-      min-height: 60vh;
-      font-family: var(--pico-font-family-monospace);
-      font-size: 0.82rem;
-      resize: vertical;
-    }
   </style>
 </head>
 <body>
@@ -317,8 +309,7 @@
   <div class="tabs">
     <div class="tab active" data-panel="output-panel">Output</div>
     <div class="tab" data-panel="context-panel">Context</div>
-    <div class="tab" data-panel="system-prompt-panel">System Prompt</div>
-    <div class="tab" data-panel="system-panel">System</div>
+<div class="tab" data-panel="system-panel">System</div>
     <div class="tab" data-panel="command-panel">Command</div>
     <div class="tab" data-panel="state-panel">State</div>
     <span id="token-totals" style="margin-left:auto;font-size:0.75rem;opacity:0.5;padding:0.4rem 0.5rem;font-family:var(--pico-font-family-monospace);white-space:nowrap;"></span>
@@ -348,13 +339,6 @@
       <button id="btn-refresh-state">Refresh</button>
     </div>
     <div id="state-content" style="font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;"></div>
-  </div>
-
-  <div id="system-prompt-panel" class="panel">
-    <div class="ctx-clear-wrap">
-      <button id="btn-save-sysprompt">Save</button>
-    </div>
-    <textarea id="system-prompt-input" placeholder="Enter system prompt..."></textarea>
   </div>
 
   <script src="app.js"></script>
