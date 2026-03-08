@@ -214,6 +214,13 @@
     turn.appendChild(body);
 
     turn.addEventListener('click', e => {
+      const wasCollapsed = turn.classList.contains('collapsed');
+      if (wasCollapsed) {
+        // Collapse all other turns
+        outputPanel.querySelectorAll('.turn').forEach(t => {
+          if (t !== turn) t.classList.add('collapsed');
+        });
+      }
       turn.classList.toggle('collapsed');
     });
 
@@ -245,7 +252,8 @@
       e.stopPropagation();
       enterAnswerMode(fullText);
     });
-    turn.appendChild(btn);
+    const summary = turn.querySelector('.turn-summary');
+    summary.appendChild(btn);
   }
 
   function enterAnswerMode(text) {
