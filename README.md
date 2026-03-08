@@ -1,47 +1,82 @@
-use your claude subscription better
-lets make a harness for coding CLIs. It's a custom agent that really just uses top 3 agents in CLI  instead of chat mode.
+# agentbox
 
-There is no interaction, even questions. All it does it run the agent CLI in as verbose as possible with JSON to stdout. Then it presents the data in a very palatable format.
+A lightweight web UI that wraps the [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI. It runs Claude in non-interactive `--print` mode, parses the streaming JSON output, and presents it in a clean, collapsible browser interface.
 
-######### IMPORTANT
-Because it's difficult to run claude in claude, just use @example.json as an example of CLI output
-Do NOT try to run claude under any circumstance
-Use the Anthropic API docs to fill in gaps missing from example.json. If you need me to run claude to create some scenario in example.json, ask me.
-#########
+## How it works
 
+Each time you submit a prompt, agentbox:
 
+1. Appends your prompt to a **context file** (a plain-text transcript)
+2. Launches `claude --print --output-format stream-json` with the full context as the prompt
+3. Streams the JSON events to the browser over SSE
+4. Appends Claude's response back to the context file
 
+This simulates multi-turn conversation across separate single-shot CLI invocations. Claude state (history, todos, cache, etc.) is wiped before each run for isolation.
 
-# Outputs
+## UI
 
-Each input has the responses indented beneath it. Each input + indented outputs is a group. A group has a space between the other groups for visual ease.
+- **Prompt bar** at the top — type and hit Enter
+- **Output tab** — each exchange is a collapsible "turn" showing the user prompt and assistant response. Thinking blocks and tool results start collapsed. Click to expand.
+- **Context tab** — view and clear the accumulated transcript that gets sent as the prompt
+- **System Prompt tab** — set a custom system prompt for all subsequent runs
+- **System tab** — raw JSON of Claude's system init event (model, tools, session info, etc.)
+- **Command tab** — the exact `claude` CLI invocation that was run, with all flags
+- **Token totals** — running input/output token counts and cost in the tab bar
+- **Answer Question** — click on a completed turn to load the assistant's text into the prompt for editing and re-sending
+- Press **`s`** to toggle auto-scroll
 
-Each tool use should show tool output indented beneath it
+## Building
 
-Colors can be used. I'm not sure how yet. Anything to make it very readable. Whatever successful tools do, or ease of readability studies.
+Requires Go 1.25+. The `web/` directory is embedded into the binary.
 
-# Dependencies
-HTML5 + minimal CSS frameworks to make the output look great + vanilla JS, no frameworks of any kind
+```bash
+# Linux
+go build -o agentbox .
 
-# Architecture
-We'll use Golang so the claude CLI gets launched in a goroutine. Output captured and processed in real time.
+# macOS
+GOOS=darwin GOARCH=arm64 go build -o agentbox-darwin-arm64 .
+GOOS=darwin GOARCH=amd64 go build -o agentbox-darwin-amd64 .
+```
 
+## Running
 
-# Package
-Let's make it a super lean web app, assuming a web app can be packaged easily into a static Golang executable
+```bash
+# Start the server (requires `claude` CLI on PATH)
+./agentbox
+# Open http://localhost:8080
 
-Lets make it the simplest possible design. I really just need an input text field and then a big nice looking output on the rest of the screen that displays the contents of a running claude.
+# Replay a saved stream-json file for testing
+./agentbox --demo example.json
+```
 
-Only one instance of the agent at a time. Let it run its own agents.
+## Container
 
-Lets let each grouping only be 2 lines until it gets clicked on, then it expands rapidly. This will let lots of groups exist on the screen at once.
+```bash
+# Build the container image
+./build-env.sh
 
-Let the user click on a question response to enter question answers and send.
+# Launch an interactive shell in the container
+./launch-env.sh
+```
 
-Show a tab called Context that shows the context. Clear it any time
+The Containerfile sets up Alpine with Go, the Claude CLI, and [beads_rust](https://github.com/Dicklesworthstone/beads_rust) for issue tracking.
 
-# Filesytem
-Part of the web UI should show the file contents of ~/.claude and list ~/claude.json*
+## Claude CLI flags
 
-# Flags
-The claude CLI will be run with --output-format=stream-json and --verbose
+agentbox launches Claude with these flags:
+
+- `--print` — non-interactive single-shot mode
+- `--output-format stream-json` — structured streaming output
+- `--verbose` — include thinking blocks
+- `--dangerously-skip-permissions` — no permission prompts
+- `--disable-slash-commands` — no slash command processing
+- `--no-session-persistence` — don't persist session state
+- `--mcp-config ""` / `--strict-mcp-config` — disable MCP servers
+- `--disallowed-tools` — disables tools not suited for headless operation
+
+## Stack
+
+- **Go** — HTTP server, CLI process management, JSON stream parsing
+- **Vanilla JS** — no frameworks, single `app.js`
+- **Pico CSS** — minimal dark-theme styling
+- **SSE** — real-time event streaming to the browser
