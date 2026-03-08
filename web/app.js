@@ -15,6 +15,7 @@
   const btnSaveSysprompt = document.getElementById('btn-save-sysprompt');
   const systemContent = document.getElementById('system-content');
   const commandContent = document.getElementById('command-content');
+  const tokenTotals = document.getElementById('token-totals');
 
   let autoScroll = true;
   let isRunning = false;
@@ -24,6 +25,9 @@
   let pendingEl = null;
   let answerMode = false;
   let lastInputTokens = 0;
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCost = 0;
 
   // --- Tabs ---
   document.querySelectorAll('.tab').forEach(tab => {
@@ -351,7 +355,10 @@
           break;
 
         case 'result':
-          if (data.input_tokens) lastInputTokens = data.input_tokens;
+          if (data.input_tokens) { lastInputTokens = data.input_tokens; totalInputTokens += data.input_tokens; }
+          if (data.output_tokens) totalOutputTokens += data.output_tokens;
+          if (data.total_cost_usd) totalCost += data.total_cost_usd;
+          updateTokenTotals();
           if (currentTurn) {
             let summaryHTML = '';
             if (data.stop_reason) summaryHTML += '<span>stop_reason: ' + esc(data.stop_reason) + '</span>';
@@ -381,6 +388,15 @@
   }
 
   connectSSE();
+
+  // --- Token totals ---
+  function updateTokenTotals() {
+    let parts = [];
+    if (totalInputTokens) parts.push('in: ' + totalInputTokens.toLocaleString());
+    if (totalOutputTokens) parts.push('out: ' + totalOutputTokens.toLocaleString());
+    if (totalCost) parts.push('$' + totalCost.toFixed(4));
+    tokenTotals.textContent = parts.join(' · ');
+  }
 
   // --- Escape HTML ---
   function esc(s) {
