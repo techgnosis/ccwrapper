@@ -96,9 +96,13 @@
   btnClear.addEventListener('click', () => {
     if (isRunning) return;
     fetch('/api/clear', { method: 'POST' }).then(() => {
-      outputPanel.innerHTML = '';
+      const divider = document.createElement('div');
+      divider.className = 'context-cleared';
+      divider.textContent = '— Context cleared —';
+      outputPanel.appendChild(divider);
       currentTurn = null;
-      turnCount = 0;
+      loadContext();
+      doAutoScroll();
     }).catch(() => {});
   });
 
@@ -272,9 +276,6 @@
           break;
 
         case 'rate_limit':
-          if (currentTurn) {
-            addBlock(currentTurn, 'rate_limit', data.content);
-          }
           break;
 
         case 'result':

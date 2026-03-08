@@ -110,8 +110,8 @@
       transition: max-height 0.2s ease;
     }
 
-    .turn.collapsed {
-      max-height: var(--collapsed-height);
+    .turn.collapsed .turn-body {
+      display: none;
     }
 
     .block.collapsed {
@@ -228,6 +228,19 @@
     @keyframes pulse {
       0%, 100% { opacity: 0.2; }
       50% { opacity: 0.6; }
+    }
+
+    /* Context cleared divider */
+    .context-cleared {
+      text-align: center;
+      padding: 0.6rem 0;
+      margin: 0.8rem 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      opacity: 0.5;
+      border-top: 1px solid var(--pico-muted-border-color);
+      border-bottom: 1px solid var(--pico-muted-border-color);
+      font-family: var(--pico-font-family-monospace);
     }
 
     /* Context tab */
