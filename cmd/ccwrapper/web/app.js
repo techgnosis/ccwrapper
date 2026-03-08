@@ -182,8 +182,11 @@
   // --- Turn management ---
   function startNewTurn(prompt) {
     turnCount++;
+    // Collapse all existing turns before creating the new one
+    outputPanel.querySelectorAll('.turn').forEach(t => t.classList.add('collapsed'));
+
     const turn = document.createElement('div');
-    turn.className = 'turn collapsed';
+    turn.className = 'turn';
     turn.dataset.turnId = turnCount;
 
     const summary = document.createElement('div');
@@ -213,7 +216,6 @@
 
   function collapseTurn(turn) {
     if (!turn) return;
-    turn.classList.add('collapsed');
     addAnswerButton(turn);
   }
 
