@@ -180,6 +180,9 @@ type UIEvent struct {
 func TransformEvent(ev *StreamEvent) []UIEvent {
 	switch ev.Type {
 	case "system":
+		if ev.Subtype != "init" {
+			return nil
+		}
 		return []UIEvent{{
 			Type:      "system",
 			SessionID: ev.SessionID,
