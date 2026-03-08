@@ -2,24 +2,14 @@
 
 echo "Deleting most claude state"
 
-# ~/.local has Claude data that seems harmless
-
-rm -rf ~/.claude/todos
-rm -rf ~/.claude/tasks
-rm -rf ~/.claude/shell-snapshots
-rm -rf ~/.claude/session-env
-rm -rf ~/.claude/projects
-rm -rf ~/.claude/plugins
-rm -rf ~/.claude/plans
-rm -rf ~/.claude/paste-cache
-rm -rf ~/.claude/history.jsonl
-rm -rf ~/.claude/file-history
-rm -rf ~/.claude/debug
-rm -rf ~/.claude/backups
-rm -rf ~/.claude/cache
-rm -rf ~/.claude/telemetry
-rm -rf ~/.claude/mcp-needs-auth-cache.json
-rm -rf ~/.claude/settings.json
-
+if [ -f ~/.claude/credentials.json ]; then
+    echo "Backing up credentials.json"
+    cp ~/.claude/credentials.json /tmp/claude-credentials.json
+    rm -rf ~/.claude
+    mkdir -p ~/.claude
+    mv /tmp/claude-credentials.json ~/.claude/credentials.json
+else
+    rm -rf ~/.claude
+fi
 
 rm -rf ~/.cache/claude

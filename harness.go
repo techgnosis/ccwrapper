@@ -291,6 +291,11 @@ func (h *Harness) launch(prompt string) {
 			log.Printf("clean-claude.sh: %v: %s", err, out)
 		}
 
+		// Strip ~/.claude.json to only userID and oauthAccount
+		if err := cleanClaudeJSON(); err != nil {
+			log.Printf("clean claude.json: %v", err)
+		}
+
 		ctxBytes, err := os.ReadFile(h.contextFile)
 		if err != nil {
 			h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("context read error: %v", err)})
@@ -310,8 +315,7 @@ func (h *Harness) launch(prompt string) {
 			"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit,Glob,Grep,EnterWorktree",
 		}
 		// Broadcast the flags for the Command tab (before appending prompt)
-		cmdDisplay := string(cleanScript) + "\n"
-		cmdDisplay += formatCommand("claude", args)
+		cmdDisplay := formatCommand("claude", args)
 		h.broadcast(UIEvent{Type: "command", Content: cmdDisplay})
 
 		args = append(args, "--", string(ctxBytes))
@@ -401,6 +405,41 @@ func (h *Harness) processStream(reader io.Reader) {
 			f.Close()
 		}
 	}
+}
+
+// cleanClaudeJSON strips ~/.claude.json down to only userID and oauthAccount.
+func cleanClaudeJSON() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(home, ".claude.json")
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	var full map[string]json.RawMessage
+	if err := json.Unmarshal(data, &full); err != nil {
+		return fmt.Errorf("parse %s: %w", path, err)
+	}
+
+	keep := make(map[string]json.RawMessage)
+	for _, key := range []string{"userID", "oauthAccount"} {
+		if v, ok := full[key]; ok {
+			keep[key] = v
+		}
+	}
+
+	out, err := json.MarshalIndent(keep, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, out, 0644)
 }
 
 // formatCommand builds a shell-style command string with one flag per line.
