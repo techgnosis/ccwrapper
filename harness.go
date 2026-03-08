@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -175,37 +174,12 @@ func (h *Harness) HandleClear(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "cleared"})
 }
 
-// HandleContext returns ~/.claude contents and ~/claude.json* files.
+// HandleContext returns the current prompt context being sent to claude.
 func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
-	home, _ := os.UserHomeDir()
-	result := make(map[string]interface{})
-
-	// List ~/.claude/
-	claudeDir := filepath.Join(home, ".claude")
-	var claudeFiles []string
-	entries, err := os.ReadDir(claudeDir)
-	if err == nil {
-		for _, e := range entries {
-			claudeFiles = append(claudeFiles, e.Name())
-		}
-	}
-	result["claude_dir"] = claudeFiles
-
-	// Read ~/claude.json* files
-	jsonFiles := make(map[string]string)
-	matches, _ := filepath.Glob(filepath.Join(home, "claude.json*"))
-	for _, m := range matches {
-		data, err := os.ReadFile(m)
-		if err == nil {
-			jsonFiles[filepath.Base(m)] = string(data)
-		}
-	}
-	result["claude_json_files"] = jsonFiles
-
-	// Current context file contents
 	data, _ := os.ReadFile(h.contextFile)
-	result["context"] = string(data)
-
+	result := map[string]interface{}{
+		"context": string(data),
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
@@ -247,17 +221,30 @@ func (h *Harness) launch(prompt string) {
 		defer demoF.Close()
 		reader = demoF
 	} else {
-		// Real mode: launch claude CLI
-		ctxReader, err := os.Open(h.contextFile)
+		// Real mode: clean state then launch claude CLI
+		cleanCmd := exec.Command("bash", "clean-claude.sh")
+		cleanCmd.Dir = "/agentbox"
+		if out, err := cleanCmd.CombinedOutput(); err != nil {
+			log.Printf("clean-claude.sh: %v: %s", err, out)
+		}
+
+		ctxBytes, err := os.ReadFile(h.contextFile)
 		if err != nil {
 			h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("context read error: %v", err)})
 			return
 		}
-		defer ctxReader.Close()
 
-		cmd := exec.Command("claude", "--output-format", "stream-json", "--verbose", "--print")
-		cmd.Stdin = ctxReader
-		cmd.Stderr = io.Discard
+		cmd := exec.Command("claude",
+			"--output-format", "stream-json",
+			"--verbose",
+			"--print",
+			"--allow-dangerously-skip-permissions",
+			"--dangerously-skip-permissions",
+			string(ctxBytes),
+		)
+
+		var stderrBuf strings.Builder
+		cmd.Stderr = &stderrBuf
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
@@ -273,7 +260,13 @@ func (h *Harness) launch(prompt string) {
 			h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("start error: %v", err)})
 			return
 		}
-		defer cmd.Wait()
+		defer func() {
+			cmd.Wait()
+			if s := strings.TrimSpace(stderrBuf.String()); s != "" {
+				log.Printf("claude stderr: %s", s)
+				h.broadcast(UIEvent{Type: "error", Content: "claude stderr: " + s})
+			}
+		}()
 		reader = stdout
 	}
 

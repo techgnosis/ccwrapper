@@ -1,3 +1,6 @@
 .envrc
 .DS_Store
-context
+agent-context
+agentbox
+agentbox-linux
+agentbox-darwin*

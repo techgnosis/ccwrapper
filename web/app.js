@@ -98,31 +98,7 @@
     fetch('/api/context')
       .then(r => r.json())
       .then(data => {
-        let html = '';
-
-        html += '<h4>~/.claude/</h4>';
-        if (data.claude_dir && data.claude_dir.length > 0) {
-          html += '<pre>' + esc(data.claude_dir.join('\n')) + '</pre>';
-        } else {
-          html += '<pre>(empty or not found)</pre>';
-        }
-
-        html += '<h4>~/claude.json*</h4>';
-        const jsonFiles = data.claude_json_files || {};
-        const keys = Object.keys(jsonFiles);
-        if (keys.length > 0) {
-          keys.forEach(k => {
-            html += '<h4>' + esc(k) + '</h4>';
-            html += '<pre>' + esc(jsonFiles[k]) + '</pre>';
-          });
-        } else {
-          html += '<pre>(none found)</pre>';
-        }
-
-        html += '<h4>Conversation Context</h4>';
-        html += '<pre>' + esc(data.context || '(empty)') + '</pre>';
-
-        contextContent.innerHTML = html;
+        contextContent.innerHTML = '<pre>' + esc(data.context || '(empty)') + '</pre>';
       })
       .catch(err => {
         contextContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
@@ -138,7 +114,7 @@
 
     const summary = document.createElement('div');
     summary.className = 'turn-summary';
-    summary.innerHTML = '<span class="label">User:</span>' + esc(prompt);
+    summary.innerHTML = '<span class="label">user</span>' + esc(prompt);
     turn.appendChild(summary);
 
     const body = document.createElement('div');
@@ -147,8 +123,6 @@
 
     // Click to toggle expand/collapse
     turn.addEventListener('click', e => {
-      // Don't toggle if clicking inside a question input
-      if (e.target.closest('.question-input-wrap')) return;
       turn.classList.toggle('collapsed');
     });
 
@@ -171,37 +145,39 @@
     switch (type) {
       case 'text':
         block.classList.add('block-text');
-        block.textContent = content;
+        block.innerHTML = '<span class="block-type">text</span>' + esc(content);
         // Update turn summary line 2
         updateTurnResponse(turn, content);
         break;
 
       case 'thinking':
         block.classList.add('block-thinking');
-        block.textContent = content;
+        block.innerHTML = '<span class="block-type">thinking</span>' + esc(content);
         break;
 
       case 'tool_use':
         block.classList.add('block-tool');
         block.dataset.toolId = extra.toolId || '';
-        block.innerHTML = '<span class="tool-name">' + esc(extra.toolName || '') + '</span>'
+        block.innerHTML = '<span class="block-type">tool_use</span>'
+          + '<span class="tool-name">' + esc(extra.toolName || '') + '</span>'
+          + '<span class="tool-sep">&middot;</span>'
           + '<span class="tool-input">' + esc(content) + '</span>';
         break;
 
       case 'tool_result':
         block.classList.add('block-result');
         if (extra && extra.isError) block.classList.add('error');
-        block.textContent = content;
+        block.innerHTML = '<span class="block-type">tool_result' + (extra && extra.isError ? ' is_error' : '') + '</span>\n' + esc(content);
         break;
 
       case 'rate_limit':
         block.classList.add('block-rate-limit');
-        block.textContent = 'rate limit: ' + content;
+        block.textContent = 'rate_limit_event: ' + content;
         break;
 
       case 'error':
         block.classList.add('block-result', 'error');
-        block.textContent = content;
+        block.innerHTML = '<span class="block-type">error</span>' + esc(content);
         break;
 
       case 'result_summary':
@@ -220,8 +196,8 @@
     const promptText = summary.querySelector('.label').nextSibling;
     const userText = promptText ? promptText.textContent : '';
     const truncated = text.length > 120 ? text.substring(0, 120) + '...' : text;
-    summary.innerHTML = '<span class="label">User:</span>' + esc(currentPrompt || userText)
-      + '<br><span class="label">Claude:</span>' + esc(truncated);
+    summary.innerHTML = '<span class="label">user</span>' + esc(currentPrompt || userText)
+      + '<br><span class="label">assistant</span>' + esc(truncated);
   }
 
   // Map tool IDs to their parent turn for indenting results
@@ -252,7 +228,7 @@
           break;
 
         case 'init':
-          statusState.textContent = 'connected: ' + (data.model || '');
+          statusState.textContent = 'system  model: ' + (data.model || '');
           break;
 
         case 'text':
@@ -290,23 +266,20 @@
         case 'result':
           if (currentTurn) {
             let summaryHTML = '';
-            if (data.duration_ms) summaryHTML += '<span>duration: ' + (data.duration_ms / 1000).toFixed(1) + 's</span>';
-            if (data.total_cost_usd) summaryHTML += '<span>cost: $' + data.total_cost_usd.toFixed(4) + '</span>';
-            if (data.input_tokens) summaryHTML += '<span>in: ' + data.input_tokens + '</span>';
-            if (data.output_tokens) summaryHTML += '<span>out: ' + data.output_tokens + '</span>';
-            if (data.num_turns) summaryHTML += '<span>turns: ' + data.num_turns + '</span>';
+            if (data.stop_reason) summaryHTML += '<span>stop_reason: ' + esc(data.stop_reason) + '</span>';
+            if (data.duration_ms) summaryHTML += '<span>duration_ms: ' + data.duration_ms + '</span>';
+            if (data.total_cost_usd) summaryHTML += '<span>total_cost_usd: $' + data.total_cost_usd.toFixed(4) + '</span>';
+            if (data.input_tokens) summaryHTML += '<span>input_tokens: ' + data.input_tokens + '</span>';
+            if (data.output_tokens) summaryHTML += '<span>output_tokens: ' + data.output_tokens + '</span>';
+            if (data.num_turns) summaryHTML += '<span>num_turns: ' + data.num_turns + '</span>';
             if (summaryHTML) {
               addBlock(currentTurn, 'result_summary', summaryHTML);
             }
             // Update status bar
-            if (data.total_cost_usd) statusCost.textContent = 'cost: $' + data.total_cost_usd.toFixed(4);
-            if (data.input_tokens || data.output_tokens) statusTokens.textContent = 'tokens: ' + (data.input_tokens||0) + ' in / ' + (data.output_tokens||0) + ' out';
-            if (data.duration_ms) statusDuration.textContent = 'time: ' + (data.duration_ms/1000).toFixed(1) + 's';
+            if (data.total_cost_usd) statusCost.textContent = 'total_cost_usd: $' + data.total_cost_usd.toFixed(4);
+            if (data.input_tokens || data.output_tokens) statusTokens.textContent = 'input_tokens: ' + (data.input_tokens||0) + '  output_tokens: ' + (data.output_tokens||0);
+            if (data.duration_ms) statusDuration.textContent = 'duration_ms: ' + data.duration_ms;
 
-            // Check if result ends with a question — offer inline answer
-            if (data.content && data.content.trim().match(/\?$/)) {
-              addQuestionInput(currentTurn);
-            }
           }
           break;
 
@@ -327,45 +300,6 @@
 
   connectSSE();
 
-  // --- Question answering ---
-  function addQuestionInput(turn) {
-    const body = turn.querySelector('.turn-body');
-    const wrap = document.createElement('div');
-    wrap.className = 'question-input-wrap';
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.placeholder = 'Type your answer...';
-    const btn = document.createElement('button');
-    btn.textContent = 'Answer';
-
-    function submitAnswer() {
-      const answer = inp.value.trim();
-      if (!answer || isRunning) return;
-      wrap.remove();
-      currentPrompt = answer;
-      startNewTurn(answer);
-      fetch('/api/prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: answer })
-      }).catch(err => {
-        addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
-      });
-    }
-
-    btn.addEventListener('click', submitAnswer);
-    inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); submitAnswer(); }
-    });
-
-    wrap.appendChild(inp);
-    wrap.appendChild(btn);
-    body.appendChild(wrap);
-    // Don't collapse this turn since it has a question
-    turn.classList.remove('collapsed');
-    inp.focus();
-    doAutoScroll();
-  }
 
   // --- Escape HTML ---
   function esc(s) {

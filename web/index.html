@@ -127,6 +127,8 @@
       font-weight: 600;
       opacity: 0.6;
       margin-right: 0.3rem;
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.78rem;
     }
 
     .turn-body {
@@ -142,10 +144,21 @@
       line-height: 1.5;
     }
 
+    .block-type {
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.72rem;
+      font-weight: 600;
+      opacity: 0.45;
+      margin-right: 0.4rem;
+      user-select: none;
+    }
+
     .block-text {
       white-space: pre-wrap;
       word-break: break-word;
     }
+
+    .block-text .block-type { color: #aaa; }
 
     .block-thinking {
       background: var(--thinking-bg);
@@ -154,19 +167,29 @@
       opacity: 0.7;
     }
 
+    .block-thinking .block-type { color: rgba(180,130,255,0.8); font-style: normal; }
+
     .block-tool {
       background: var(--tool-bg);
       border-left: 2px solid cornflowerblue;
     }
 
+    .block-tool .block-type { color: cornflowerblue; }
+
     .block-tool .tool-name {
       font-weight: 600;
       color: cornflowerblue;
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.78rem;
+    }
+
+    .block-tool .tool-sep {
+      opacity: 0.3;
+      margin: 0 0.3rem;
     }
 
     .block-tool .tool-input {
       opacity: 0.8;
-      margin-left: 0.3rem;
       font-family: var(--pico-font-family-monospace);
       font-size: 0.78rem;
     }
@@ -183,10 +206,14 @@
       overflow-y: auto;
     }
 
+    .block-result .block-type { color: limegreen; }
+
     .block-result.error {
       background: var(--error-bg);
       border-left-color: tomato;
     }
+
+    .block-result.error .block-type { color: tomato; }
 
     .block-rate-limit {
       opacity: 0.4;
@@ -198,6 +225,7 @@
       border-top: 1px solid var(--pico-muted-border-color);
       padding: 0.4rem 0.6rem;
       font-size: 0.78rem;
+      font-family: var(--pico-font-family-monospace);
       opacity: 0.7;
     }
 
@@ -205,25 +233,6 @@
       margin-right: 1rem;
     }
 
-    /* Question answering */
-    .question-input-wrap {
-      display: flex;
-      gap: 0.3rem;
-      margin-top: 0.3rem;
-    }
-
-    .question-input-wrap input {
-      flex: 1;
-      margin: 0;
-      padding: 0.3rem 0.5rem;
-      font-size: 0.82rem;
-    }
-
-    .question-input-wrap button {
-      margin: 0;
-      padding: 0.3rem 0.6rem;
-      font-size: 0.82rem;
-    }
 
     /* Context tab */
     #context-panel pre {

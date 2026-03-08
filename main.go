@@ -49,7 +49,7 @@ func main() {
 	mux.HandleFunc("POST /api/clear", h.HandleClear)
 	mux.HandleFunc("GET /api/context", h.HandleContext)
 
-	addr := "127.0.0.1:8080"
+	addr := "0.0.0.0:8080"
 	fmt.Printf("agentbox listening on http://%s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

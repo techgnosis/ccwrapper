@@ -2,8 +2,6 @@
 
 PROMPT=$1
 
-./clean-claude.sh
-
 CLAUDE_CODE_SIMPLE=y claude \
 --allow-dangerously-skip-permissions \
 --dangerously-skip-permissions \
