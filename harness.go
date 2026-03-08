@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -177,8 +178,15 @@ func (h *Harness) HandleClear(w http.ResponseWriter, r *http.Request) {
 // HandleContext returns the current prompt context being sent to claude.
 func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
 	data, _ := os.ReadFile(h.contextFile)
+	info, _ := os.Stat(h.contextFile)
+	var sizeBytes int64
+	if info != nil {
+		sizeBytes = info.Size()
+	}
 	result := map[string]interface{}{
-		"context": string(data),
+		"context":    string(data),
+		"file_path":  h.contextFile,
+		"size_bytes": sizeBytes,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
@@ -222,10 +230,14 @@ func (h *Harness) launch(prompt string) {
 		reader = demoF
 	} else {
 		// Real mode: clean state then launch claude CLI
-		cleanCmd := exec.Command("bash", "clean-claude.sh")
-		cleanCmd.Dir = "/agentbox"
-		if out, err := cleanCmd.CombinedOutput(); err != nil {
-			log.Printf("clean-claude.sh: %v: %s", err, out)
+		if exePath, err := os.Executable(); err == nil {
+			cleanPath := filepath.Join(filepath.Dir(exePath), "clean-claude.sh")
+			if _, err := os.Stat(cleanPath); err == nil {
+				cleanCmd := exec.Command("bash", cleanPath)
+				if out, err := cleanCmd.CombinedOutput(); err != nil {
+					log.Printf("clean-claude.sh: %v: %s", err, out)
+				}
+			}
 		}
 
 		ctxBytes, err := os.ReadFile(h.contextFile)

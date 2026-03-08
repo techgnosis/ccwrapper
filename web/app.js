@@ -10,16 +10,13 @@
   const btnRefreshCtx = document.getElementById('btn-refresh-ctx');
   const contextContent = document.getElementById('context-content');
   const scrollIndicator = document.getElementById('scroll-indicator');
-  const statusState = document.getElementById('status-state');
-  const statusCost = document.getElementById('status-cost');
-  const statusTokens = document.getElementById('status-tokens');
-  const statusDuration = document.getElementById('status-duration');
 
   let autoScroll = true;
   let isRunning = false;
-  let currentTurn = null;      // the active turn DOM element
-  let currentPrompt = null;    // the user prompt that started this turn
+  let currentTurn = null;
+  let currentPrompt = null;
   let turnCount = 0;
+  let pendingEl = null;
 
   // --- Tabs ---
   document.querySelectorAll('.tab').forEach(tab => {
@@ -28,6 +25,7 @@
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(tab.dataset.panel).classList.add('active');
+      if (tab.dataset.panel === 'context-panel') loadContext();
     });
   });
 
@@ -42,6 +40,23 @@
   function doAutoScroll() {
     if (autoScroll) {
       outputPanel.scrollTop = outputPanel.scrollHeight;
+    }
+  }
+
+  // --- Pending indicator ---
+  function showPending() {
+    removePending();
+    pendingEl = document.createElement('div');
+    pendingEl.className = 'pending-line';
+    pendingEl.textContent = 'pending';
+    outputPanel.appendChild(pendingEl);
+    doAutoScroll();
+  }
+
+  function removePending() {
+    if (pendingEl) {
+      pendingEl.remove();
+      pendingEl = null;
     }
   }
 
@@ -61,7 +76,6 @@
     currentPrompt = prompt;
     promptInput.value = '';
 
-    // Create a new turn
     startNewTurn(prompt);
 
     fetch('/api/prompt', {
@@ -85,9 +99,6 @@
       outputPanel.innerHTML = '';
       currentTurn = null;
       turnCount = 0;
-      statusCost.textContent = '';
-      statusTokens.textContent = '';
-      statusDuration.textContent = '';
     }).catch(() => {});
   });
 
@@ -98,7 +109,12 @@
     fetch('/api/context')
       .then(r => r.json())
       .then(data => {
-        contextContent.innerHTML = '<pre>' + esc(data.context || '(empty)') + '</pre>';
+        const size = data.size_bytes || 0;
+        const sizeStr = size < 1024 ? size + ' B' : (size / 1024).toFixed(1) + ' KB';
+        contextContent.innerHTML =
+          '<div style="font-family:var(--pico-font-family-monospace);font-size:0.78rem;opacity:0.6;margin-bottom:0.5rem">'
+          + esc(data.file_path || '') + '  (' + sizeStr + ')</div>'
+          + '<pre>' + esc(data.context || '(empty)') + '</pre>';
       })
       .catch(err => {
         contextContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
@@ -109,7 +125,7 @@
   function startNewTurn(prompt) {
     turnCount++;
     const turn = document.createElement('div');
-    turn.className = 'turn';
+    turn.className = 'turn collapsed';
     turn.dataset.turnId = turnCount;
 
     const summary = document.createElement('div');
@@ -121,14 +137,13 @@
     body.className = 'turn-body';
     turn.appendChild(body);
 
-    // Click to toggle expand/collapse
     turn.addEventListener('click', e => {
       turn.classList.toggle('collapsed');
     });
 
     outputPanel.appendChild(turn);
     currentTurn = turn;
-    doAutoScroll();
+    showPending();
   }
 
   function collapseTurn(turn) {
@@ -138,6 +153,8 @@
 
   function addBlock(turn, type, content, extra) {
     if (!turn) return;
+    removePending();
+
     const body = turn.querySelector('.turn-body');
     const block = document.createElement('div');
     block.className = 'block';
@@ -145,29 +162,28 @@
     switch (type) {
       case 'text':
         block.classList.add('block-text');
-        block.innerHTML = '<span class="block-type">text</span>' + esc(content);
-        // Update turn summary line 2
+        block.textContent = content;
         updateTurnResponse(turn, content);
         break;
 
       case 'thinking':
-        block.classList.add('block-thinking');
-        block.innerHTML = '<span class="block-type">thinking</span>' + esc(content);
+        block.classList.add('block-thinking', 'collapsed');
+        block.textContent = content;
+        block.addEventListener('click', e => { e.stopPropagation(); block.classList.toggle('collapsed'); });
         break;
 
       case 'tool_use':
         block.classList.add('block-tool');
         block.dataset.toolId = extra.toolId || '';
-        block.innerHTML = '<span class="block-type">tool_use</span>'
-          + '<span class="tool-name">' + esc(extra.toolName || '') + '</span>'
-          + '<span class="tool-sep">&middot;</span>'
+        block.innerHTML = '<span class="tool-name">' + esc(extra.toolName || '') + '</span>'
           + '<span class="tool-input">' + esc(content) + '</span>';
         break;
 
       case 'tool_result':
-        block.classList.add('block-result');
+        block.classList.add('block-result', 'collapsed');
         if (extra && extra.isError) block.classList.add('error');
-        block.innerHTML = '<span class="block-type">tool_result' + (extra && extra.isError ? ' is_error' : '') + '</span>\n' + esc(content);
+        block.textContent = content;
+        block.addEventListener('click', e => { e.stopPropagation(); block.classList.toggle('collapsed'); });
         break;
 
       case 'rate_limit':
@@ -177,22 +193,21 @@
 
       case 'error':
         block.classList.add('block-result', 'error');
-        block.innerHTML = '<span class="block-type">error</span>' + esc(content);
+        block.textContent = content;
         break;
 
       case 'result_summary':
         block.classList.add('block-result-summary');
-        block.innerHTML = content; // pre-formatted HTML
+        block.innerHTML = content;
         break;
     }
 
     body.appendChild(block);
-    doAutoScroll();
+    showPending();
   }
 
   function updateTurnResponse(turn, text) {
     const summary = turn.querySelector('.turn-summary');
-    // Show user prompt on line 1, model response on line 2
     const promptText = summary.querySelector('.label').nextSibling;
     const userText = promptText ? promptText.textContent : '';
     const truncated = text.length > 120 ? text.substring(0, 120) + '...' : text;
@@ -218,17 +233,16 @@
       switch (data.type) {
         case 'status':
           isRunning = data.running;
-          statusState.textContent = isRunning ? 'running' : 'idle';
           btnSend.style.display = isRunning ? 'none' : '';
           btnStop.style.display = isRunning ? '' : 'none';
           promptInput.disabled = isRunning;
-          if (!isRunning && currentTurn) {
-            collapseTurn(currentTurn);
+          if (!isRunning) {
+            removePending();
+            if (currentTurn) collapseTurn(currentTurn);
           }
           break;
 
         case 'init':
-          statusState.textContent = 'system  model: ' + (data.model || '');
           break;
 
         case 'text':
@@ -275,11 +289,6 @@
             if (summaryHTML) {
               addBlock(currentTurn, 'result_summary', summaryHTML);
             }
-            // Update status bar
-            if (data.total_cost_usd) statusCost.textContent = 'total_cost_usd: $' + data.total_cost_usd.toFixed(4);
-            if (data.input_tokens || data.output_tokens) statusTokens.textContent = 'input_tokens: ' + (data.input_tokens||0) + '  output_tokens: ' + (data.output_tokens||0);
-            if (data.duration_ms) statusDuration.textContent = 'duration_ms: ' + data.duration_ms;
-
           }
           break;
 
@@ -292,14 +301,12 @@
     };
 
     evtSource.onerror = function() {
-      statusState.textContent = 'disconnected';
       setTimeout(connectSSE, 2000);
       evtSource.close();
     };
   }
 
   connectSSE();
-
 
   // --- Escape HTML ---
   function esc(s) {
