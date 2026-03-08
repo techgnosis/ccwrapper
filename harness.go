@@ -291,10 +291,11 @@ func (h *Harness) launch(prompt string) {
 			args = append(args, "--system-prompt", sp)
 		}
 		// Broadcast the flags for the Command tab (before appending prompt)
-		h.broadcast(UIEvent{Type: "command", Content: formatCommand("claude", args)})
+		h.broadcast(UIEvent{Type: "command", Content: "CLAUDE_CODE_SIMPLE=y " + formatCommand("claude", args)})
 
 		args = append(args, "--", string(ctxBytes))
 		cmd := exec.Command("claude", args...)
+		cmd.Env = append(os.Environ(), "CLAUDE_CODE_SIMPLE=y")
 
 		var stderrBuf strings.Builder
 		cmd.Stderr = &stderrBuf

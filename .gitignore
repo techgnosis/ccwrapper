@@ -1,6 +1,4 @@
 .envrc
 .DS_Store
-agent-context
-agentbox
-agentbox-linux
-agentbox-darwin*
+ccwrapper-*
+ccwrapper
