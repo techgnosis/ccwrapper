@@ -1,6 +1,6 @@
 #! /bin/bash
 
-./clean-claude.sh
+./cmd/ccwrapper/clean-claude.sh
 
 claude \
 --allow-dangerously-skip-permissions \
