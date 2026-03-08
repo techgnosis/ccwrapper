@@ -1,4 +1,3 @@
 .envrc
 .DS_Store
-ccwrapper-*
-ccwrapper
+/ccwrapper
