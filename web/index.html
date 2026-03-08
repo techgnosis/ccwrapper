@@ -318,7 +318,8 @@
     <div class="tab active" data-panel="output-panel">Output</div>
     <div class="tab" data-panel="context-panel">Context</div>
     <div class="tab" data-panel="system-prompt-panel">System Prompt</div>
-    <div class="tab" data-panel="init-panel">Init</div>
+    <div class="tab" data-panel="system-panel">System</div>
+    <div class="tab" data-panel="command-panel">Command</div>
     <span id="scroll-indicator">scroll: on</span>
   </div>
 
@@ -332,8 +333,12 @@
     <div id="context-content"></div>
   </div>
 
-  <div id="init-panel" class="panel">
-    <pre id="init-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no init data yet — send a prompt first)</pre>
+  <div id="system-panel" class="panel">
+    <pre id="system-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no system data yet — send a prompt first)</pre>
+  </div>
+
+  <div id="command-panel" class="panel">
+    <pre id="command-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no command yet — send a prompt first)</pre>
   </div>
 
   <div id="system-prompt-panel" class="panel">

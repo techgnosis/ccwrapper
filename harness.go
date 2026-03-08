@@ -278,6 +278,10 @@ func (h *Harness) launch(prompt string) {
 			"--print",
 			"--allow-dangerously-skip-permissions",
 			"--dangerously-skip-permissions",
+			"--disable-slash-commands",
+			"--no-session-persistence",
+			"--mcp-config", "",
+			"--strict-mcp-config",
 			"--disallowed-tools", "AskUserQuestion,CronCreate,CronDelete,CronList,EnterPlanMode,ExitPlanMode,TodoWrite,Skill,NotebookEdit",
 		}
 		h.mu.Lock()
@@ -286,6 +290,9 @@ func (h *Harness) launch(prompt string) {
 		if sp != "" {
 			args = append(args, "--system-prompt", sp)
 		}
+		// Broadcast the flags for the Command tab (before appending prompt)
+		h.broadcast(UIEvent{Type: "command", Content: formatCommand("claude", args)})
+
 		args = append(args, "--", string(ctxBytes))
 		cmd := exec.Command("claude", args...)
 
@@ -372,4 +379,35 @@ func (h *Harness) processStream(reader io.Reader) {
 			f.Close()
 		}
 	}
+}
+
+// formatCommand builds a shell-style command string with one flag per line.
+func formatCommand(name string, args []string) string {
+	var b strings.Builder
+	b.WriteString(name)
+	for i := 0; i < len(args); i++ {
+		b.WriteString(" \\\n  ")
+		a := args[i]
+		if a == "" || strings.ContainsAny(a, " \t\n\"'\\") {
+			b.WriteByte('\'')
+			b.WriteString(strings.ReplaceAll(a, "'", "'\\''"))
+			b.WriteByte('\'')
+		} else {
+			b.WriteString(a)
+		}
+		// If next arg is a value (not a flag), keep it on the same line
+		if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+			a2 := args[i+1]
+			b.WriteByte(' ')
+			if a2 == "" || strings.ContainsAny(a2, " \t\n\"'\\") {
+				b.WriteByte('\'')
+				b.WriteString(strings.ReplaceAll(a2, "'", "'\\''"))
+				b.WriteByte('\'')
+			} else {
+				b.WriteString(a2)
+			}
+			i++
+		}
+	}
+	return b.String()
 }

@@ -13,7 +13,8 @@
   const scrollIndicator = document.getElementById('scroll-indicator');
   const systemPromptInput = document.getElementById('system-prompt-input');
   const btnSaveSysprompt = document.getElementById('btn-save-sysprompt');
-  const initContent = document.getElementById('init-content');
+  const systemContent = document.getElementById('system-content');
+  const commandContent = document.getElementById('command-content');
 
   let autoScroll = true;
   let isRunning = false;
@@ -306,16 +307,18 @@
           }
           break;
 
-        case 'init':
-          let initText = '';
-          if (data.session_id) initText += 'session_id: ' + data.session_id + '\n';
-          if (data.model) initText += 'model: ' + data.model + '\n';
-          if (data.cwd) initText += 'cwd: ' + data.cwd + '\n';
-          if (data.tools && data.tools.length) {
-            initText += '\ntools (' + data.tools.length + '):\n';
-            data.tools.forEach(t => { initText += '  ' + t + '\n'; });
+        case 'system':
+          if (data.system_raw) {
+            try {
+              systemContent.textContent = JSON.stringify(data.system_raw, null, 2);
+            } catch {
+              systemContent.textContent = JSON.stringify(data, null, 2);
+            }
           }
-          initContent.textContent = initText;
+          break;
+
+        case 'command':
+          commandContent.textContent = data.content || '';
           break;
 
         case 'text':

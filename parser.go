@@ -28,6 +28,9 @@ type StreamEvent struct {
 	// For rate_limit_event
 	RateLimitInfo *RateLimitInfo `json:"rate_limit_info,omitempty"`
 
+	// Raw bytes of the original event (not from JSON, set by ParseEvent)
+	RawLine json.RawMessage `json:"-"`
+
 	// For result
 	IsError      bool    `json:"is_error,omitempty"`
 	DurationMS   int     `json:"duration_ms,omitempty"`
@@ -123,6 +126,7 @@ func ParseEvent(line []byte) (*StreamEvent, error) {
 	if err := json.Unmarshal(line, &ev); err != nil {
 		return nil, err
 	}
+	ev.RawLine = json.RawMessage(append([]byte(nil), line...))
 	// Parse tool_use_result which can be an object or a string
 	if len(ev.RawToolUseResult) > 0 {
 		var tur ToolUseResult
@@ -165,10 +169,8 @@ type UIEvent struct {
 	InputTokens  int     `json:"input_tokens,omitempty"`
 	OutputTokens int     `json:"output_tokens,omitempty"`
 
-	// For init
-	Model string   `json:"model,omitempty"`
-	CWD   string   `json:"cwd,omitempty"`
-	Tools []string `json:"tools,omitempty"`
+	// For system (raw JSON of the full system event)
+	SystemRaw json.RawMessage `json:"system_raw,omitempty"`
 
 	// For status
 	Running bool `json:"running,omitempty"`
@@ -179,11 +181,9 @@ func TransformEvent(ev *StreamEvent) []UIEvent {
 	switch ev.Type {
 	case "system":
 		return []UIEvent{{
-			Type:      "init",
+			Type:      "system",
 			SessionID: ev.SessionID,
-			Model:     ev.Model,
-			CWD:       ev.CWD,
-			Tools:     ev.Tools,
+			SystemRaw: ev.RawLine,
 		}}
 
 	case "assistant":
