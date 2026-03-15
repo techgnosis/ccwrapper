@@ -35,6 +35,7 @@
   let planMdContents = ''; // loaded from server
   let executeMdContents = ''; // loaded from server
   let refineMdContents = ''; // loaded from server
+  let answerMdContents = ''; // loaded from server
 
   // --- Tabs ---
   document.querySelectorAll('.tab').forEach(tab => {
@@ -166,6 +167,15 @@
   }
   loadRefineMd();
 
+  // --- Load answer.md from server ---
+  function loadAnswerMd() {
+    fetch('/api/prompts/answer')
+      .then(r => r.json())
+      .then(data => { answerMdContents = data.content || ''; })
+      .catch(() => { answerMdContents = ''; });
+  }
+  loadAnswerMd();
+
   // --- Send refine ---
   btnSendRefine.addEventListener('click', sendRefine);
 
@@ -199,12 +209,20 @@
     refineEditor.style.display = 'none';
     btnSendAnswers.style.display = 'none';
 
+    // Restore Send Refine button and swap preview back to refine.md
+    btnSendRefine.style.display = '';
+    refinePreview.textContent = refineMdContents || '(refine.md is empty)';
+    document.querySelector('#refine-toolbar span').textContent = 'Sends prompts/refine.md as the prompt';
+
+    // Prepend answer.md contents to the prompt
+    const prompt = answerMdContents ? answerMdContents + '\n\n' + text : text;
+
     startNewTurn('answers');
 
     fetch('/api/prompt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: text })
+      body: JSON.stringify({ prompt })
     }).catch(err => {
       addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
     });
@@ -348,6 +366,11 @@
     refineEditor.value = allText;
     refineEditor.style.display = '';
     btnSendAnswers.style.display = '';
+    // Hide Send Refine until answers are sent
+    btnSendRefine.style.display = 'none';
+    // Swap preview to answer.md
+    refinePreview.textContent = answerMdContents || '(answer.md is empty)';
+    document.querySelector('#refine-toolbar span').textContent = 'Sends prompts/answer.md as the prompt';
   }
 
   function addBlock(turn, type, content, extra) {
