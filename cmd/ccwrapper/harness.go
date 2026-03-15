@@ -237,21 +237,35 @@ func (h *Harness) HandlePromptFile(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"content": string(data)})
 }
 
-// HandleBrList runs "br list" and returns its output.
+// HandleBrList runs "br list" and returns its output plus a count of open issues.
 func (h *Harness) HandleBrList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	cmd := exec.Command("br", "list")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]string{
-			"output": string(out),
-			"error":  err.Error(),
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"output":     string(out),
+			"error":      err.Error(),
+			"open_count": 0,
 		})
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]string{
-		"output": string(out),
+
+	// Count open issues
+	openCount := 0
+	openCmd := exec.Command("br", "list", "--json", "--status=open")
+	openOut, err := openCmd.CombinedOutput()
+	if err == nil {
+		var issues []interface{}
+		if json.Unmarshal(openOut, &issues) == nil {
+			openCount = len(issues)
+		}
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"output":     string(out),
+		"open_count": openCount,
 	})
 }
 

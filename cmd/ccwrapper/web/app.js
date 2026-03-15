@@ -87,6 +87,21 @@
       .catch(() => { planMdContents = ''; });
   }
   loadPlanMd();
+  loadBrList(); // Check open issues on page load to set plan disabled state
+
+  // --- Plan disabled state based on open issues ---
+  const planDisabledTitle = 'Plan only works when there are no open issues';
+
+  function updatePlanDisabledState(openCount) {
+    const hasOpen = openCount > 0;
+    // Don't override the isRunning disabled state
+    if (!isRunning) {
+      planEditor.disabled = hasOpen;
+      btnSendPlan.disabled = hasOpen;
+    }
+    planEditor.title = hasOpen ? planDisabledTitle : '';
+    btnSendPlan.title = hasOpen ? planDisabledTitle : '';
+  }
 
   // --- Load br list from server ---
   function loadBrList() {
@@ -94,6 +109,7 @@
       .then(r => r.json())
       .then(data => {
         brListContent.textContent = data.output || '(no work items)';
+        updatePlanDisabledState(data.open_count || 0);
       })
       .catch(() => {
         brListContent.textContent = '(failed to load br list)';
@@ -412,11 +428,13 @@
         case 'status':
           isRunning = data.running;
           btnStop.style.display = isRunning ? '' : 'none';
-          btnSendPlan.disabled = isRunning;
           btnSendExecute.disabled = isRunning;
           btnSendRefine.disabled = isRunning;
           btnSendAnswers.disabled = isRunning;
-          planEditor.disabled = isRunning;
+          if (isRunning) {
+            btnSendPlan.disabled = true;
+            planEditor.disabled = true;
+          }
           if (!isRunning) {
             removePending();
             if (currentTurn) {
@@ -425,6 +443,7 @@
               }
               collapseTurn(currentTurn);
             }
+            loadBrList(); // Re-check open issues to update plan disabled state
           }
           break;
 
