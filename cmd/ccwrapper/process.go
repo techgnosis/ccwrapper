@@ -13,14 +13,14 @@ import (
 
 // launch runs the claude CLI (or replays a demo file) and streams output.
 func (h *Harness) launch(prompt string) {
-	h.broadcast(UIEvent{Type: "status", Running: true})
+	h.broadcast(UIEvent{Type: UITypeStatus, Running: true})
 
 	defer func() {
 		h.mu.Lock()
 		h.running = false
 		h.cmd = nil
 		h.mu.Unlock()
-		h.broadcast(UIEvent{Type: "status", Running: false})
+		h.broadcast(UIEvent{Type: UITypeStatus, Running: false})
 	}()
 
 	var reader io.Reader
@@ -29,7 +29,7 @@ func (h *Harness) launch(prompt string) {
 		// Demo mode: replay file with a small delay per line
 		demoF, err := os.Open(h.demoFile)
 		if err != nil {
-			h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("demo file error: %v", err)})
+			h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("demo file error: %v", err)})
 			return
 		}
 		defer demoF.Close()
@@ -55,7 +55,7 @@ func (h *Harness) launch(prompt string) {
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("pipe error: %v", err)})
+			h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("pipe error: %v", err)})
 			return
 		}
 
@@ -64,14 +64,14 @@ func (h *Harness) launch(prompt string) {
 		h.mu.Unlock()
 
 		if err := cmd.Start(); err != nil {
-			h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("start error: %v", err)})
+			h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("start error: %v", err)})
 			return
 		}
 		defer func() {
 			cmd.Wait()
 			if s := strings.TrimSpace(stderrBuf.String()); s != "" {
 				log.Printf("claude stderr: %s", s)
-				h.broadcast(UIEvent{Type: "error", Content: "claude stderr: " + s})
+				h.broadcast(UIEvent{Type: UITypeError, Content: "claude stderr: " + s})
 			}
 		}()
 		reader = stdout
@@ -98,7 +98,7 @@ func (h *Harness) processStream(reader io.Reader) {
 		}
 
 		// Capture session ID
-		if ev.Type == "system" && ev.SessionID != "" {
+		if ev.Type == EventSystem && ev.SessionID != "" {
 			h.mu.Lock()
 			h.sessionID = ev.SessionID
 			h.mu.Unlock()

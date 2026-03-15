@@ -45,13 +45,13 @@ func (h *Harness) HandleSSE(w http.ResponseWriter, r *http.Request) {
 	h.mu.Lock()
 	running := h.running
 	h.mu.Unlock()
-	statusJSON, err := json.Marshal(UIEvent{Type: "status", Running: running})
+	statusJSON, err := json.Marshal(UIEvent{Type: UITypeStatus, Running: running})
 	if err != nil {
 		log.Printf("marshal status event: %v", err)
 		return
 	}
 	fmt.Fprintf(w, "data: %s\n\n", statusJSON)
-	cmdJSON, err := json.Marshal(UIEvent{Type: "command", Content: h.commandDisplay})
+	cmdJSON, err := json.Marshal(UIEvent{Type: UITypeCommand, Content: h.commandDisplay})
 	if err != nil {
 		log.Printf("marshal command event: %v", err)
 		return

@@ -1,6 +1,20 @@
 (function() {
   'use strict';
 
+  const EventType = {
+    TEXT: 'text',
+    THINKING: 'thinking',
+    TOOL_USE: 'tool_use',
+    TOOL_RESULT: 'tool_result',
+    STATUS: 'status',
+    COMMAND: 'command',
+    ERROR: 'error',
+    SYSTEM: 'system',
+    RATE_LIMIT: 'rate_limit',
+    RESULT: 'result',
+    RESULT_SUMMARY: 'result_summary',
+  };
+
   const outputPanel = document.getElementById('output-panel');
   const btnStop = document.getElementById('btn-stop');
   const scrollIndicator = document.getElementById('scroll-indicator');
@@ -165,7 +179,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt })
     }).catch(err => {
-      addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
+      addBlock(currentTurn, EventType.ERROR, 'Failed to send: ' + err.message);
     });
   }
 
@@ -310,38 +324,38 @@
     block.className = 'block';
 
     switch (type) {
-      case 'text':
+      case EventType.TEXT:
         block.classList.add('block-text');
         block.textContent = content;
         updateTurnResponse(turn, content);
         break;
 
-      case 'thinking':
+      case EventType.THINKING:
         block.classList.add('block-thinking', 'collapsed');
         block.textContent = content;
         block.addEventListener('click', e => { e.stopPropagation(); block.classList.toggle('collapsed'); });
         break;
 
-      case 'tool_use':
+      case EventType.TOOL_USE:
         block.classList.add('block-tool');
         block.dataset.toolId = extra.toolId || '';
         block.innerHTML = '<span class="tool-name">' + esc(extra.toolName || '') + '</span>'
           + '<span class="tool-input">' + esc(content) + '</span>';
         break;
 
-      case 'tool_result':
+      case EventType.TOOL_RESULT:
         block.classList.add('block-result', 'collapsed');
         if (extra && extra.isError) block.classList.add('error');
         block.textContent = content;
         block.addEventListener('click', e => { e.stopPropagation(); block.classList.toggle('collapsed'); });
         break;
 
-      case 'error':
+      case EventType.ERROR:
         block.classList.add('block-result', 'error');
         block.textContent = content;
         break;
 
-      case 'result_summary':
+      case EventType.RESULT_SUMMARY:
         block.classList.add('block-result-summary');
         block.innerHTML = content;
         break;
@@ -376,7 +390,7 @@
       }
 
       switch (data.type) {
-        case 'status':
+        case EventType.STATUS:
           isRunning = data.running;
           btnStop.style.display = isRunning ? '' : 'none';
           btnSendExecute.disabled = isRunning;
@@ -398,7 +412,7 @@
           }
           break;
 
-        case 'system':
+        case EventType.SYSTEM:
           if (data.system_raw) {
             try {
               systemContent.textContent = JSON.stringify(data.system_raw, null, 2);
@@ -408,40 +422,40 @@
           }
           break;
 
-        case 'command':
+        case EventType.COMMAND:
           commandContent.textContent = data.content || '';
           break;
 
-        case 'text':
+        case EventType.TEXT:
           if (!currentTurn) startNewTurn('(continued)');
-          addBlock(currentTurn, 'text', data.content);
+          addBlock(currentTurn, EventType.TEXT, data.content);
           break;
 
-        case 'thinking':
+        case EventType.THINKING:
           if (!currentTurn) startNewTurn('(continued)');
-          addBlock(currentTurn, 'thinking', data.content);
+          addBlock(currentTurn, EventType.THINKING, data.content);
           break;
 
-        case 'tool_use':
+        case EventType.TOOL_USE:
           if (!currentTurn) startNewTurn('(continued)');
           toolIdToTurn[data.tool_id] = currentTurn;
-          addBlock(currentTurn, 'tool_use', data.tool_input, {
+          addBlock(currentTurn, EventType.TOOL_USE, data.tool_input, {
             toolName: data.tool_name,
             toolId: data.tool_id
           });
           break;
 
-        case 'tool_result':
+        case EventType.TOOL_RESULT:
           const parentTurn = toolIdToTurn[data.parent_tool_id] || currentTurn;
-          addBlock(parentTurn, 'tool_result', data.content, {
+          addBlock(parentTurn, EventType.TOOL_RESULT, data.content, {
             isError: data.is_error
           });
           break;
 
-        case 'rate_limit':
+        case EventType.RATE_LIMIT:
           break;
 
-        case 'result':
+        case EventType.RESULT:
           if (data.input_tokens) totalInputTokens += data.input_tokens;
           if (data.output_tokens) totalOutputTokens += data.output_tokens;
           if (data.total_cost_usd) totalCost += data.total_cost_usd;
@@ -455,14 +469,14 @@
             if (data.output_tokens) summaryHTML += '<span>output_tokens: ' + data.output_tokens + '</span>';
             if (data.num_turns) summaryHTML += '<span>num_turns: ' + data.num_turns + '</span>';
             if (summaryHTML) {
-              addBlock(currentTurn, 'result_summary', summaryHTML);
+              addBlock(currentTurn, EventType.RESULT_SUMMARY, summaryHTML);
             }
           }
           break;
 
-        case 'error':
+        case EventType.ERROR:
           if (currentTurn) {
-            addBlock(currentTurn, 'error', data.content);
+            addBlock(currentTurn, EventType.ERROR, data.content);
           }
           break;
       }

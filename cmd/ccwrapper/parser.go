@@ -6,6 +6,37 @@ import (
 	"strings"
 )
 
+// Stream event types (from claude CLI stream-json output).
+const (
+	EventSystem    = "system"
+	EventAssistant = "assistant"
+	EventUser      = "user"
+	EventResult    = "result"
+	EventRateLimit = "rate_limit_event"
+)
+
+// Content block types.
+const (
+	BlockText       = "text"
+	BlockThinking   = "thinking"
+	BlockToolUse    = "tool_use"
+	BlockToolResult = "tool_result"
+)
+
+// UI event types (sent to browser via SSE).
+const (
+	UITypeStatus     = "status"
+	UITypeCommand    = "command"
+	UITypeSystem     = "system"
+	UITypeText       = "text"
+	UITypeThinking   = "thinking"
+	UITypeToolUse    = "tool_use"
+	UITypeToolResult = "tool_result"
+	UITypeRateLimit  = "rate_limit"
+	UITypeResult     = "result"
+	UITypeError      = "error"
+)
+
 // Top-level event from stream-json output
 type StreamEvent struct {
 	Type    string          `json:"type"`
@@ -179,30 +210,30 @@ type UIEvent struct {
 // TransformEvent converts a raw StreamEvent into UIEvents for the browser.
 func TransformEvent(ev *StreamEvent) []UIEvent {
 	switch ev.Type {
-	case "system":
+	case EventSystem:
 		if ev.Subtype != "init" {
 			return nil
 		}
 		return []UIEvent{{
-			Type:      "system",
+			Type:      UITypeSystem,
 			SessionID: ev.SessionID,
 			SystemRaw: ev.RawLine,
 		}}
 
-	case "assistant":
+	case EventAssistant:
 		if ev.Message == nil {
 			return nil
 		}
 		var events []UIEvent
 		for _, block := range ev.Message.Content {
 			switch block.Type {
-			case "text":
-				events = append(events, UIEvent{Type: "text", Content: block.Text})
-			case "thinking":
-				events = append(events, UIEvent{Type: "thinking", Content: block.Thinking})
-			case "tool_use":
+			case BlockText:
+				events = append(events, UIEvent{Type: UITypeText, Content: block.Text})
+			case BlockThinking:
+				events = append(events, UIEvent{Type: UITypeThinking, Content: block.Thinking})
+			case BlockToolUse:
 				events = append(events, UIEvent{
-					Type:      "tool_use",
+					Type:      UITypeToolUse,
 					ToolName:  block.Name,
 					ToolID:    block.ID,
 					ToolInput: summarizeToolInput(block.Name, block.Input),
@@ -211,13 +242,13 @@ func TransformEvent(ev *StreamEvent) []UIEvent {
 		}
 		return events
 
-	case "user":
+	case EventUser:
 		if ev.Message == nil {
 			return nil
 		}
 		var events []UIEvent
 		for _, block := range ev.Message.Content {
-			if block.Type == "tool_result" {
+			if block.Type == BlockToolResult {
 				content := block.ContentStr
 				if ev.ToolUseResult != nil {
 					if ev.ToolUseResult.Stdout != "" {
@@ -231,7 +262,7 @@ func TransformEvent(ev *StreamEvent) []UIEvent {
 					}
 				}
 				events = append(events, UIEvent{
-					Type:         "tool_result",
+					Type:         UITypeToolResult,
 					ParentToolID: block.ToolUseID,
 					Content:      content,
 					IsError:      block.IsError,
@@ -240,16 +271,16 @@ func TransformEvent(ev *StreamEvent) []UIEvent {
 		}
 		return events
 
-	case "rate_limit_event":
+	case EventRateLimit:
 		info := ""
 		if ev.RateLimitInfo != nil {
 			info = fmt.Sprintf("%s (%s)", ev.RateLimitInfo.Status, ev.RateLimitInfo.RateLimitType)
 		}
-		return []UIEvent{{Type: "rate_limit", Content: info}}
+		return []UIEvent{{Type: UITypeRateLimit, Content: info}}
 
-	case "result":
+	case EventResult:
 		ui := UIEvent{
-			Type:         "result",
+			Type:         UITypeResult,
 			Content:      ev.Result,
 			DurationMS:   ev.DurationMS,
 			TotalCostUSD: ev.TotalCostUSD,
