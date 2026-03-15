@@ -56,6 +56,8 @@ func main() {
 	mux.HandleFunc("POST /api/stop", h.HandleStop)
 	mux.HandleFunc("GET /api/state", h.HandleState)
 	mux.HandleFunc("GET /api/claude-json", h.HandleClaudeJSON)
+	mux.HandleFunc("GET /api/prompts/{name}", h.HandlePromptFile)
+	mux.HandleFunc("GET /api/br-list", h.HandleBrList)
 
 	addr := "0.0.0.0:8080"
 	fmt.Printf("agentbox listening on http://%s\n", addr)

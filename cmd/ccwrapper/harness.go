@@ -219,6 +219,42 @@ func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(sections)
 }
 
+// HandlePromptFile returns the contents of a prompt file (e.g. prompts/plan.md).
+func (h *Harness) HandlePromptFile(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		http.Error(w, "missing name", http.StatusBadRequest)
+		return
+	}
+	path := filepath.Join("prompts", name+".md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"content": "", "error": err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"content": string(data)})
+}
+
+// HandleBrList runs "br list" and returns its output.
+func (h *Harness) HandleBrList(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	cmd := exec.Command("br", "list")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]string{
+			"output": string(out),
+			"error":  err.Error(),
+		})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{
+		"output": string(out),
+	})
+}
+
 // HandleClaudeJSON returns the top-level fields of ~/.claude.json.
 func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
