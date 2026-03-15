@@ -15,6 +15,7 @@
   const executePreview = document.getElementById('execute-preview');
   const brListContent = document.getElementById('br-list-content');
   const btnRefreshWorkitems = document.getElementById('btn-refresh-workitems');
+  const btnScrapWork = document.getElementById('btn-scrap-work');
   const btnSendRefine = document.getElementById('btn-send-refine');
   const refinePreview = document.getElementById('refine-preview');
   const refineEditor = document.getElementById('refine-editor');
@@ -101,6 +102,23 @@
 
   // --- Refresh button for Work Items panel ---
   btnRefreshWorkitems.addEventListener('click', loadBrList);
+
+  // --- Scrap Work button ---
+  btnScrapWork.addEventListener('click', () => {
+    if (!window.confirm('Delete all open work items? This cannot be undone.')) return;
+    fetch('/api/br-scrap', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          alert('Scrap failed: ' + data.error);
+        } else {
+          loadBrList();
+        }
+      })
+      .catch(err => {
+        alert('Scrap failed: ' + err.message);
+      });
+  });
 
   // --- Load execute.md from server ---
   function loadExecuteMd() {

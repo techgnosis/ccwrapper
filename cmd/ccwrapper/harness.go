@@ -255,6 +255,58 @@ func (h *Harness) HandleBrList(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandleBrScrap hard-deletes all open work items from br.
+func (h *Harness) HandleBrScrap(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Get all open issue IDs
+	listCmd := exec.Command("br", "list", "--json", "--status=open")
+	listOut, err := listCmd.CombinedOutput()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("br list failed: %v: %s", err, string(listOut)),
+		})
+		return
+	}
+
+	var issues []struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(listOut, &issues); err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("parse br list: %v", err),
+		})
+		return
+	}
+
+	if len(issues) == 0 {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"deleted": 0,
+		})
+		return
+	}
+
+	// Collect IDs and hard-delete them
+	ids := make([]string, len(issues))
+	for i, issue := range issues {
+		ids[i] = issue.ID
+	}
+
+	delArgs := append([]string{"delete", "--hard", "--force"}, ids...)
+	delCmd := exec.Command("br", delArgs...)
+	delOut, err := delCmd.CombinedOutput()
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  fmt.Sprintf("br delete failed: %v: %s", err, string(delOut)),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"deleted": len(ids),
+	})
+}
+
 // HandleClaudeJSON returns the top-level fields of ~/.claude.json.
 func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
