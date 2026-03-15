@@ -41,16 +41,22 @@
   let answerMdContents = ''; // loaded from server
 
   // --- Tabs ---
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.panel).classList.add('active');
-      if (tab.dataset.panel === 'state-panel') loadState();
-      if (tab.dataset.panel === 'execute-panel') loadBrList();
+  function initTabGroup(containerSelector, panelParentSelector) {
+    const container = document.querySelector(containerSelector);
+    const panelParent = document.querySelector(panelParentSelector);
+    container.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        panelParent.querySelectorAll(':scope > .panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.panel).classList.add('active');
+        if (tab.dataset.panel === 'state-panel') loadState();
+        if (tab.dataset.panel === 'execute-panel') loadBrList();
+      });
     });
-  });
+  }
+  initTabGroup('.left-panel > .tabs', '.left-panel');
+  initTabGroup('.right-panel > .tabs', '.right-panel');
 
   // --- Auto-scroll toggle ('s' key) ---
   document.addEventListener('keydown', e => {
