@@ -15,6 +15,13 @@ import (
 	"time"
 )
 
+// jsonError writes a JSON error response with the given status code.
+func jsonError(w http.ResponseWriter, msg string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+}
+
 type sseClient struct {
 	events chan []byte
 	done   chan struct{}
@@ -94,9 +101,17 @@ func (h *Harness) HandleSSE(w http.ResponseWriter, r *http.Request) {
 	h.mu.Lock()
 	running := h.running
 	h.mu.Unlock()
-	statusJSON, _ := json.Marshal(UIEvent{Type: "status", Running: running})
+	statusJSON, err := json.Marshal(UIEvent{Type: "status", Running: running})
+	if err != nil {
+		log.Printf("marshal status event: %v", err)
+		return
+	}
 	fmt.Fprintf(w, "data: %s\n\n", statusJSON)
-	cmdJSON, _ := json.Marshal(UIEvent{Type: "command", Content: h.commandDisplay})
+	cmdJSON, err := json.Marshal(UIEvent{Type: "command", Content: h.commandDisplay})
+	if err != nil {
+		log.Printf("marshal command event: %v", err)
+		return
+	}
 	fmt.Fprintf(w, "data: %s\n\n", cmdJSON)
 	flusher.Flush()
 
@@ -115,6 +130,7 @@ func (h *Harness) HandleSSE(w http.ResponseWriter, r *http.Request) {
 func (h *Harness) broadcast(event UIEvent) {
 	data, err := json.Marshal(event)
 	if err != nil {
+		log.Printf("marshal broadcast event: %v", err)
 		return
 	}
 	h.clientsMu.Lock()
@@ -134,14 +150,14 @@ func (h *Harness) HandlePrompt(w http.ResponseWriter, r *http.Request) {
 		Prompt string `json:"prompt"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Prompt) == "" {
-		http.Error(w, "invalid prompt", http.StatusBadRequest)
+		jsonError(w, "invalid prompt", http.StatusBadRequest)
 		return
 	}
 
 	h.mu.Lock()
 	if h.running {
 		h.mu.Unlock()
-		http.Error(w, "already running", http.StatusConflict)
+		jsonError(w, "already running", http.StatusConflict)
 		return
 	}
 	h.running = true
@@ -159,7 +175,7 @@ func (h *Harness) HandleStop(w http.ResponseWriter, r *http.Request) {
 	defer h.mu.Unlock()
 
 	if !h.running || h.cmd == nil || h.cmd.Process == nil {
-		http.Error(w, "not running", http.StatusConflict)
+		jsonError(w, "not running", http.StatusConflict)
 		return
 	}
 
@@ -223,7 +239,7 @@ func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 func (h *Harness) HandlePromptFile(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" {
-		http.Error(w, "missing name", http.StatusBadRequest)
+		jsonError(w, "missing name", http.StatusBadRequest)
 		return
 	}
 	path := filepath.Join("prompts", name+".md")
@@ -239,16 +255,10 @@ func (h *Harness) HandlePromptFile(w http.ResponseWriter, r *http.Request) {
 
 // HandleBrList runs "br list" and returns its output plus a count of open issues.
 func (h *Harness) HandleBrList(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	cmd := exec.Command("br", "list")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"output":     string(out),
-			"error":      err.Error(),
-			"open_count": 0,
-		})
+		jsonError(w, fmt.Sprintf("br list failed: %v: %s", err, string(out)), http.StatusInternalServerError)
 		return
 	}
 
@@ -256,13 +266,18 @@ func (h *Harness) HandleBrList(w http.ResponseWriter, r *http.Request) {
 	openCount := 0
 	openCmd := exec.Command("br", "list", "--json", "--status=open")
 	openOut, err := openCmd.CombinedOutput()
-	if err == nil {
+	if err != nil {
+		log.Printf("br list --json --status=open: %v", err)
+	} else {
 		var issues []interface{}
-		if json.Unmarshal(openOut, &issues) == nil {
+		if err := json.Unmarshal(openOut, &issues); err != nil {
+			log.Printf("unmarshal br list output: %v", err)
+		} else {
 			openCount = len(issues)
 		}
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"output":     string(out),
 		"open_count": openCount,
@@ -271,15 +286,11 @@ func (h *Harness) HandleBrList(w http.ResponseWriter, r *http.Request) {
 
 // HandleBrScrap hard-deletes all open work items from br.
 func (h *Harness) HandleBrScrap(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	// Get all open issue IDs
 	listCmd := exec.Command("br", "list", "--json", "--status=open")
 	listOut, err := listCmd.CombinedOutput()
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("br list failed: %v: %s", err, string(listOut)),
-		})
+		jsonError(w, fmt.Sprintf("br list failed: %v: %s", err, string(listOut)), http.StatusInternalServerError)
 		return
 	}
 
@@ -287,13 +298,12 @@ func (h *Harness) HandleBrScrap(w http.ResponseWriter, r *http.Request) {
 		ID string `json:"id"`
 	}
 	if err := json.Unmarshal(listOut, &issues); err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("parse br list: %v", err),
-		})
+		jsonError(w, fmt.Sprintf("parse br list: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	if len(issues) == 0 {
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"deleted": 0,
 		})
@@ -310,12 +320,11 @@ func (h *Harness) HandleBrScrap(w http.ResponseWriter, r *http.Request) {
 	delCmd := exec.Command("br", delArgs...)
 	delOut, err := delCmd.CombinedOutput()
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error":  fmt.Sprintf("br delete failed: %v: %s", err, string(delOut)),
-		})
+		jsonError(w, fmt.Sprintf("br delete failed: %v: %s", err, string(delOut)), http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"deleted": len(ids),
 	})
@@ -323,8 +332,6 @@ func (h *Harness) HandleBrScrap(w http.ResponseWriter, r *http.Request) {
 
 // HandleClaudeJSON returns the top-level fields of ~/.claude.json.
 func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	home, _ := os.UserHomeDir()
 	p := filepath.Join(home, ".claude.json")
 	fi, statErr := os.Stat(p)
@@ -334,12 +341,12 @@ func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := os.ReadFile(p)
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid JSON: " + err.Error()})
+		jsonError(w, "invalid JSON: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Build summary: for each top-level key, show a short representation
@@ -362,6 +369,7 @@ func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	if modTime != "" {
 		summary["_lastModified"] = modTime
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(summary)
 }
 
@@ -469,6 +477,9 @@ func (h *Harness) processStream(reader io.Reader) {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		log.Printf("stream scanner error: %v", err)
+	}
 }
 
 // cleanClaudeState removes ~/.claude (preserving credentials.json) and ~/.cache/claude.
