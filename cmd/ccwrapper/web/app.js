@@ -1,18 +1,24 @@
 (function() {
   'use strict';
 
-  const headerEl = document.querySelector('header');
   const outputPanel = document.getElementById('output-panel');
-  const promptInput = document.getElementById('prompt-input');
-  const btnSend = document.getElementById('btn-send');
   const btnStop = document.getElementById('btn-stop');
-  const btnCancelAnswer = document.getElementById('btn-cancel-answer');
   const scrollIndicator = document.getElementById('scroll-indicator');
   const systemContent = document.getElementById('system-content');
   const commandContent = document.getElementById('command-content');
   const stateContent = document.getElementById('state-content');
   const claudeJsonContent = document.getElementById('claude-json-content');
   const btnRefreshState = document.getElementById('btn-refresh-state');
+  const planEditor = document.getElementById('plan-editor');
+  const btnSendPlan = document.getElementById('btn-send-plan');
+  const btnSendExecute = document.getElementById('btn-send-execute');
+  const executePreview = document.getElementById('execute-preview');
+  const brListContent = document.getElementById('br-list-content');
+  const btnSendRefine = document.getElementById('btn-send-refine');
+  const refinePreview = document.getElementById('refine-preview');
+  const brListContentRefine = document.getElementById('br-list-content-refine');
+  const refineEditor = document.getElementById('refine-editor');
+  const btnSendAnswers = document.getElementById('btn-send-answers');
 
   const tokenTotals = document.getElementById('token-totals');
 
@@ -22,10 +28,12 @@
   let currentPrompt = null;
   let turnCount = 0;
   let pendingEl = null;
-  let answerMode = false;
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   let totalCost = 0;
+  let planMdContents = ''; // loaded from server
+  let executeMdContents = ''; // loaded from server
+  let refineMdContents = ''; // loaded from server
 
   // --- Tabs ---
   document.querySelectorAll('.tab').forEach(tab => {
@@ -35,6 +43,8 @@
       tab.classList.add('active');
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'state-panel') loadState();
+      if (tab.dataset.panel === 'execute-panel') loadBrList();
+      if (tab.dataset.panel === 'refine-panel') loadBrListRefine();
     });
   });
 
@@ -69,24 +79,146 @@
     }
   }
 
-  // --- Send prompt ---
-  btnSend.addEventListener('click', sendPrompt);
-  promptInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey && !answerMode) {
-      e.preventDefault();
-      sendPrompt();
-    }
-  });
+  // --- Load plan.md from server ---
+  function loadPlanMd() {
+    fetch('/api/prompts/plan')
+      .then(r => r.json())
+      .then(data => { planMdContents = data.content || ''; })
+      .catch(() => { planMdContents = ''; });
+  }
+  loadPlanMd();
 
-  function sendPrompt() {
-    const prompt = promptInput.value.trim();
-    if (!prompt || isRunning) return;
+  // --- Load br list from server ---
+  function loadBrList() {
+    fetch('/api/br-list')
+      .then(r => r.json())
+      .then(data => {
+        brListContent.textContent = data.output || '(no work items)';
+      })
+      .catch(() => {
+        brListContent.textContent = '(failed to load br list)';
+      });
+  }
+  loadBrList();
 
-    currentPrompt = prompt;
-    promptInput.value = '';
-    exitAnswerMode();
+  // --- Load execute.md from server ---
+  function loadExecuteMd() {
+    fetch('/api/prompts/execute')
+      .then(r => r.json())
+      .then(data => {
+        executeMdContents = data.content || '';
+        executePreview.textContent = executeMdContents || '(execute.md is empty)';
+      })
+      .catch(() => {
+        executeMdContents = '';
+        executePreview.textContent = '(failed to load execute.md)';
+      });
+  }
+  loadExecuteMd();
 
-    startNewTurn(prompt);
+  // --- Load br list for refine panel ---
+  function loadBrListRefine() {
+    fetch('/api/br-list')
+      .then(r => r.json())
+      .then(data => {
+        brListContentRefine.textContent = data.output || '(no work items)';
+      })
+      .catch(() => {
+        brListContentRefine.textContent = '(failed to load br list)';
+      });
+  }
+  loadBrListRefine();
+
+  // --- Load refine.md from server ---
+  function loadRefineMd() {
+    fetch('/api/prompts/refine')
+      .then(r => r.json())
+      .then(data => {
+        refineMdContents = data.content || '';
+        refinePreview.textContent = refineMdContents || '(refine.md is empty)';
+      })
+      .catch(() => {
+        refineMdContents = '';
+        refinePreview.textContent = '(failed to load refine.md)';
+      });
+  }
+  loadRefineMd();
+
+  // --- Send refine ---
+  btnSendRefine.addEventListener('click', sendRefine);
+
+  function sendRefine() {
+    if (!refineMdContents || isRunning) return;
+
+    const prompt = refineMdContents;
+    currentPrompt = 'refine';
+
+    startNewTurn('refine');
+
+    fetch('/api/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    }).catch(err => {
+      addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
+    });
+  }
+
+  // --- Send answers ---
+  btnSendAnswers.addEventListener('click', sendAnswers);
+
+  function sendAnswers() {
+    const text = refineEditor.value.trim();
+    if (!text || isRunning) return;
+
+    currentPrompt = 'answers';
+
+    // Hide editor and button
+    refineEditor.style.display = 'none';
+    btnSendAnswers.style.display = 'none';
+
+    startNewTurn('answers');
+
+    fetch('/api/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: text })
+    }).catch(err => {
+      addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
+    });
+  }
+
+  // --- Send execute ---
+  btnSendExecute.addEventListener('click', sendExecute);
+
+  function sendExecute() {
+    if (!executeMdContents || isRunning) return;
+
+    const prompt = executeMdContents;
+    currentPrompt = 'execute';
+
+    startNewTurn('execute');
+
+    fetch('/api/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    }).catch(err => {
+      addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
+    });
+  }
+
+  // --- Send plan ---
+  btnSendPlan.addEventListener('click', sendPlan);
+
+  function sendPlan() {
+    const userText = planEditor.value.trim();
+    if (!userText || isRunning) return;
+
+    const prompt = planMdContents + '\n\n' + userText;
+    currentPrompt = userText;
+
+    startNewTurn(userText);
 
     fetch('/api/prompt', {
       method: 'POST',
@@ -184,44 +316,34 @@
   }
 
   function addAnswerButton(turn) {
+    // Only add once
     if (turn.querySelector('.btn-answer')) return;
-    const textBlocks = turn.querySelectorAll('.block-text');
-    if (textBlocks.length === 0) return;
-
     // Gather all text content from the turn
-    let fullText = '';
-    textBlocks.forEach(b => { fullText += b.textContent + '\n'; });
-    fullText = fullText.trimEnd();
-
+    const textBlocks = turn.querySelectorAll('.turn-body .block-text');
+    if (textBlocks.length === 0) return;
+    const allText = Array.from(textBlocks).map(b => b.textContent).join('\n\n');
     const btn = document.createElement('button');
     btn.className = 'btn-answer';
     btn.textContent = 'Answer Question';
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      enterAnswerMode(fullText);
+      answerQuestion(allText);
     });
-    const summary = turn.querySelector('.turn-summary');
-    summary.appendChild(btn);
+    turn.querySelector('.turn-summary').appendChild(btn);
   }
 
-  function enterAnswerMode(text) {
-    answerMode = true;
-    headerEl.classList.add('answer-mode');
-    btnCancelAnswer.style.display = 'inline-block';
-    promptInput.value = text;
-    promptInput.focus();
+  function answerQuestion(text) {
+    // Switch to Refine tab and populate editor
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-panel="refine-panel"]').classList.add('active');
+    document.getElementById('refine-panel').classList.add('active');
+    loadBrListRefine();
+    // Populate and show the editor and Send Answers button
+    refineEditor.value = text;
+    refineEditor.style.display = '';
+    btnSendAnswers.style.display = '';
   }
-
-  function exitAnswerMode() {
-    answerMode = false;
-    headerEl.classList.remove('answer-mode');
-    btnCancelAnswer.style.display = 'none';
-  }
-
-  btnCancelAnswer.addEventListener('click', () => {
-    promptInput.value = '';
-    exitAnswerMode();
-  });
 
   function addBlock(turn, type, content, extra) {
     if (!turn) return;
@@ -300,9 +422,12 @@
       switch (data.type) {
         case 'status':
           isRunning = data.running;
-          btnSend.style.display = isRunning ? 'none' : '';
           btnStop.style.display = isRunning ? '' : 'none';
-          promptInput.disabled = isRunning;
+          btnSendPlan.disabled = isRunning;
+          btnSendExecute.disabled = isRunning;
+          btnSendRefine.disabled = isRunning;
+          btnSendAnswers.disabled = isRunning;
+          planEditor.disabled = isRunning;
           if (!isRunning) {
             removePending();
             if (currentTurn) collapseTurn(currentTurn);
