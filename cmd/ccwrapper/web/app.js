@@ -35,10 +35,7 @@
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   let totalCost = 0;
-  let planMdContents = ''; // loaded from server
-  let executeMdContents = ''; // loaded from server
-  let refineMdContents = ''; // loaded from server
-  let answerMdContents = ''; // loaded from server
+  const promptContents = { plan: '', execute: '', refine: '', answer: '' };
 
   // --- Tabs ---
   function initTabGroup(containerSelector, panelParentSelector) {
@@ -89,14 +86,20 @@
     }
   }
 
-  // --- Load plan.md from server ---
-  function loadPlanMd() {
-    fetch('/api/prompts/plan')
+  // --- Load prompt file from server ---
+  function loadPromptFile(name, previewEl) {
+    fetch('/api/prompts/' + name)
       .then(r => r.json())
-      .then(data => { planMdContents = data.content || ''; })
-      .catch(() => { planMdContents = ''; });
+      .then(data => {
+        promptContents[name] = data.content || '';
+        if (previewEl) previewEl.textContent = promptContents[name] || '(' + name + '.md is empty)';
+      })
+      .catch(() => {
+        promptContents[name] = '';
+        if (previewEl) previewEl.textContent = '(failed to load ' + name + '.md)';
+      });
   }
-  loadPlanMd();
+  loadPromptFile('plan');
   loadBrList(); // Check open issues on page load to set plan disabled state
 
   // --- Plan disabled state based on open issues ---
@@ -146,62 +149,17 @@
       });
   });
 
-  // --- Load execute.md from server ---
-  function loadExecuteMd() {
-    fetch('/api/prompts/execute')
-      .then(r => r.json())
-      .then(data => {
-        executeMdContents = data.content || '';
-        executePreview.textContent = executeMdContents || '(execute.md is empty)';
-      })
-      .catch(() => {
-        executeMdContents = '';
-        executePreview.textContent = '(failed to load execute.md)';
-      });
-  }
-  loadExecuteMd();
+  loadPromptFile('execute', executePreview);
 
-  // --- Load refine.md from server ---
-  function loadRefineMd() {
-    fetch('/api/prompts/refine')
-      .then(r => r.json())
-      .then(data => {
-        refineMdContents = data.content || '';
-        refinePreview.textContent = refineMdContents || '(refine.md is empty)';
-      })
-      .catch(() => {
-        refineMdContents = '';
-        refinePreview.textContent = '(failed to load refine.md)';
-      });
-  }
-  loadRefineMd();
+  loadPromptFile('refine', refinePreview);
 
-  // --- Load answer.md from server ---
-  function loadAnswerMd() {
-    fetch('/api/prompts/answer')
-      .then(r => r.json())
-      .then(data => {
-        answerMdContents = data.content || '';
-        answerPreview.textContent = answerMdContents || '(answer.md is empty)';
-      })
-      .catch(() => {
-        answerMdContents = '';
-        answerPreview.textContent = '(failed to load answer.md)';
-      });
-  }
-  loadAnswerMd();
+  loadPromptFile('answer', answerPreview);
 
-  // --- Send refine ---
-  btnSendRefine.addEventListener('click', sendRefine);
-
-  function sendRefine() {
-    if (!refineMdContents || isRunning) return;
-
-    const prompt = refineMdContents;
-    currentPrompt = 'refine';
-
-    startNewTurn('refine');
-
+  // --- Send prompt (generic) ---
+  function sendPrompt(type, prompt) {
+    if (!prompt || isRunning) return;
+    currentPrompt = type;
+    startNewTurn(type);
     fetch('/api/prompt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -211,9 +169,12 @@
     });
   }
 
-  // --- Send answers ---
-  btnSendAnswers.addEventListener('click', sendAnswers);
+  // --- Send refine ---
+  btnSendRefine.addEventListener('click', () => {
+    sendPrompt('refine', promptContents.refine);
+  });
 
+  // --- Send answers ---
   btnCancelAnswers.addEventListener('click', () => {
     answerEditor.value = '';
     answerTab.style.display = 'none';
@@ -221,66 +182,25 @@
     document.getElementById('answer-panel').classList.remove('active');
   });
 
-  function sendAnswers() {
+  btnSendAnswers.addEventListener('click', () => {
     const text = answerEditor.value.trim();
-    if (!text || isRunning) return;
-
-    currentPrompt = 'answers';
-
-    // Prepend answer.md contents to the prompt
-    const prompt = answerMdContents ? answerMdContents + '\n\n' + text : text;
-
-    startNewTurn('answers');
-
-    fetch('/api/prompt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    }).catch(err => {
-      addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
-    });
-  }
+    if (!text) return;
+    const prompt = promptContents.answer ? promptContents.answer + '\n\n' + text : text;
+    sendPrompt('answers', prompt);
+  });
 
   // --- Send execute ---
-  btnSendExecute.addEventListener('click', sendExecute);
-
-  function sendExecute() {
-    if (!executeMdContents || isRunning) return;
-
-    const prompt = executeMdContents;
-    currentPrompt = 'execute';
-
-    startNewTurn('execute');
-
-    fetch('/api/prompt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    }).catch(err => {
-      addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
-    });
-  }
+  btnSendExecute.addEventListener('click', () => {
+    sendPrompt('execute', promptContents.execute);
+  });
 
   // --- Send plan ---
-  btnSendPlan.addEventListener('click', sendPlan);
-
-  function sendPlan() {
+  btnSendPlan.addEventListener('click', () => {
     const userText = planEditor.value.trim();
-    if (!userText || isRunning) return;
-
-    const prompt = planMdContents + '\n\n' + userText;
-    currentPrompt = userText;
-
-    startNewTurn(userText);
-
-    fetch('/api/prompt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    }).catch(err => {
-      addBlock(currentTurn, 'error', 'Failed to send: ' + err.message);
-    });
-  }
+    if (!userText) return;
+    const prompt = promptContents.plan + '\n\n' + userText;
+    sendPrompt(userText, prompt);
+  });
 
   // --- Stop ---
   btnStop.addEventListener('click', () => {
