@@ -317,6 +317,61 @@
       50% { opacity: 0.6; }
     }
 
+    /* Utility classes extracted from inline styles */
+    .meta-text {
+      font-size: 0.75rem;
+      opacity: 0.5;
+      font-family: var(--pico-font-family-monospace);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .btn-compact {
+      margin: 0;
+      padding: 0.5rem 1.5rem;
+    }
+
+    .btn-small {
+      padding: 0.3rem 0.8rem;
+      font-size: 0.8rem;
+    }
+
+    .pre-content {
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .section-header {
+      font-size: 0.8rem;
+      opacity: 0.6;
+    }
+
+    .preview-section {
+      margin-top: 0.5rem;
+      flex-shrink: 0;
+      overflow-y: auto;
+      max-height: 30%;
+    }
+
+    .mono-panel {
+      flex: 1;
+      font-family: var(--pico-font-family-monospace);
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+    }
+
+    .ml-auto {
+      margin-left: auto;
+    }
+
   </style>
 </head>
 <body>
@@ -330,9 +385,9 @@
       <div class="tabs">
         <div class="tab active" data-panel="plan-panel">Plan</div>
         <div class="tab" data-panel="refine-panel">Refine</div>
-        <div class="tab" id="answer-tab" data-panel="answer-panel" style="display:none;">Answer</div>
+        <div class="tab" id="answer-tab" data-panel="answer-panel" style="display:none">Answer</div>
         <div class="tab" data-panel="execute-panel">Execute</div>
-        <span id="token-totals" style="margin-left:auto;font-size:0.75rem;opacity:0.5;padding:0.4rem 0.5rem;font-family:var(--pico-font-family-monospace);white-space:nowrap;"></span>
+        <span id="token-totals" class="meta-text ml-auto" style="padding:0.4rem 0.5rem;white-space:nowrap"></span>
       </div>
 
       <div id="plan-panel" class="panel active">
@@ -344,44 +399,44 @@
       </div>
 
       <div id="refine-panel" class="panel">
-        <div id="refine-toolbar" style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
-          <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);">Sends prompts/refine.md as the prompt</span>
-          <button id="btn-send-refine" style="margin:0;margin-left:auto;padding:0.5rem 1.5rem;">Send Refine</button>
+        <div id="refine-toolbar" class="toolbar">
+          <span class="meta-text">Sends prompts/refine.md as the prompt</span>
+          <button id="btn-send-refine" class="btn-compact ml-auto">Send Refine</button>
         </div>
-        <div style="margin-top:0.5rem;flex-shrink:0;overflow-y:auto;max-height:30%;">
-          <strong style="font-size:0.8rem;opacity:0.6;">Refine Prompt</strong>
-          <pre id="refine-preview" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;">(loading refine.md...)</pre>
+        <div class="preview-section">
+          <strong class="section-header">Refine Prompt</strong>
+          <pre id="refine-preview" class="pre-content" style="margin-top:0.3rem;opacity:0.7">(loading refine.md...)</pre>
         </div>
       </div>
 
       <div id="answer-panel" class="panel">
-        <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);flex-shrink:0;">Prepends prompts/answer.md to your answers</span>
-        <textarea id="answer-editor" placeholder="Edit the assistant's response and send your answers..." style="flex:1;margin:0;font-family:var(--pico-font-family-monospace);font-size:0.85rem;line-height:1.5;resize:none;border:none;border-radius:0;padding:0.8rem 1rem;background:var(--turn-bg);"></textarea>
-        <div id="answer-toolbar" style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
-          <button id="btn-cancel-answers" style="margin:0;padding:0.5rem 1.5rem;" class="secondary">Cancel</button>
-          <button id="btn-send-answers" style="margin:0;margin-left:auto;padding:0.5rem 1.5rem;">Send Answers</button>
+        <span class="meta-text" style="flex-shrink:0">Prepends prompts/answer.md to your answers</span>
+        <textarea id="answer-editor" placeholder="Edit the assistant's response and send your answers..." style="flex:1;margin:0;font-family:var(--pico-font-family-monospace);font-size:0.85rem;line-height:1.5;resize:none;border:none;border-radius:0;padding:0.8rem 1rem;background:var(--turn-bg)"></textarea>
+        <div id="answer-toolbar" class="toolbar">
+          <button id="btn-cancel-answers" class="btn-compact secondary">Cancel</button>
+          <button id="btn-send-answers" class="btn-compact ml-auto">Send Answers</button>
         </div>
-        <div style="margin-top:0.5rem;flex-shrink:0;overflow-y:auto;max-height:30%;">
-          <strong style="font-size:0.8rem;opacity:0.6;">Answer Prompt</strong>
-          <pre id="answer-preview" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;">(loading answer.md...)</pre>
+        <div class="preview-section">
+          <strong class="section-header">Answer Prompt</strong>
+          <pre id="answer-preview" class="pre-content" style="margin-top:0.3rem;opacity:0.7">(loading answer.md...)</pre>
         </div>
       </div>
 
       <div id="execute-panel" class="panel">
-        <div id="execute-toolbar" style="display:flex;gap:0.5rem;align-items:center;">
-          <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);">Sends prompts/execute.md as the prompt</span>
-          <button id="btn-send-execute" style="margin:0;margin-left:auto;padding:0.5rem 1.5rem;">Send Execute</button>
+        <div id="execute-toolbar" class="toolbar">
+          <span class="meta-text">Sends prompts/execute.md as the prompt</span>
+          <button id="btn-send-execute" class="btn-compact ml-auto">Send Execute</button>
         </div>
-        <div style="margin-top:0.5rem;">
-          <strong style="font-size:0.8rem;opacity:0.6;">Execute Prompt</strong>
-          <pre id="execute-preview" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;">(loading execute.md...)</pre>
+        <div style="margin-top:0.5rem">
+          <strong class="section-header">Execute Prompt</strong>
+          <pre id="execute-preview" class="pre-content" style="margin-top:0.3rem;opacity:0.7">(loading execute.md...)</pre>
         </div>
-        <div style="margin-top:1.5rem;">
-          <div style="margin-bottom:0.5rem;">
-            <button id="btn-refresh-workitems" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
-            <button id="btn-scrap-work" style="padding:0.3rem 0.8rem;font-size:0.8rem;background:#a33;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:2rem;">Scrap Work</button>
+        <div style="margin-top:1.5rem">
+          <div style="margin-bottom:0.5rem">
+            <button id="btn-refresh-workitems" class="btn-small">Refresh</button>
+            <button id="btn-scrap-work" class="btn-small" style="background:#a33;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:2rem">Scrap Work</button>
           </div>
-          <pre id="br-list-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;opacity:0.7;background:var(--turn-bg);padding:0.5rem;border-radius:4px;">(click tab to load)</pre>
+          <pre id="br-list-content" class="pre-content" style="opacity:0.7;background:var(--turn-bg);padding:0.5rem;border-radius:4px">(click tab to load)</pre>
         </div>
       </div>
     </div>
@@ -396,20 +451,20 @@
       <div id="output-panel" class="panel active"></div>
 
       <div id="system-panel" class="panel">
-        <pre id="system-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no system data yet — send a prompt first)</pre>
+        <pre id="system-content" class="pre-content">(no system data yet — send a prompt first)</pre>
       </div>
 
       <div id="command-panel" class="panel">
-        <pre id="command-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no command yet — send a prompt first)</pre>
+        <pre id="command-content" class="pre-content">(no command yet — send a prompt first)</pre>
       </div>
 
       <div id="state-panel" class="panel">
-        <div style="margin-bottom:0.5rem;">
-          <button id="btn-refresh-state" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
+        <div style="margin-bottom:0.5rem">
+          <button id="btn-refresh-state" class="btn-small">Refresh</button>
         </div>
-        <div style="display:flex;gap:1rem;flex:1;min-height:0;">
-          <div id="state-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;"></div>
-          <div id="claude-json-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;border-left:1px solid var(--pico-muted-border-color);padding-left:1rem;"></div>
+        <div style="display:flex;gap:1rem;flex:1;min-height:0">
+          <div id="state-content" class="mono-panel"></div>
+          <div id="claude-json-content" class="mono-panel" style="border-left:1px solid var(--pico-muted-border-color);padding-left:1rem"></div>
         </div>
       </div>
       <span id="scroll-indicator">scroll: on</span>
