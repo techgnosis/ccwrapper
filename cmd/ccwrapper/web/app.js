@@ -45,7 +45,7 @@
       tab.classList.add('active');
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'state-panel') loadState();
-      if (tab.dataset.panel === 'workitems-panel') loadBrList();
+      if (tab.dataset.panel === 'execute-panel') loadBrList();
     });
   });
 

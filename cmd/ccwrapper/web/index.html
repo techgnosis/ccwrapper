@@ -329,7 +329,6 @@
         <div class="tab" data-panel="system-panel">System</div>
         <div class="tab" data-panel="command-panel">Command</div>
         <div class="tab" data-panel="state-panel">State</div>
-        <div class="tab" data-panel="workitems-panel">Work Items</div>
         <div class="tab" data-panel="refine-panel">Refine</div>
         <div class="tab" data-panel="execute-panel">Execute</div>
         <span id="token-totals" style="margin-left:auto;font-size:0.75rem;opacity:0.5;padding:0.4rem 0.5rem;font-family:var(--pico-font-family-monospace);white-space:nowrap;"></span>
@@ -361,14 +360,6 @@
         </div>
       </div>
 
-      <div id="workitems-panel" class="panel">
-        <div style="margin-bottom:0.5rem;">
-          <button id="btn-refresh-workitems" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
-          <button id="btn-scrap-work" style="padding:0.3rem 0.8rem;font-size:0.8rem;background:#a33;color:#fff;border:none;border-radius:4px;cursor:pointer;">Scrap Work</button>
-        </div>
-        <pre id="br-list-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;opacity:0.7;background:var(--turn-bg);padding:0.5rem;border-radius:4px;">(click tab to load)</pre>
-      </div>
-
       <div id="refine-panel" class="panel">
         <div id="refine-toolbar" style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
           <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);">Sends prompts/refine.md as the prompt</span>
@@ -390,6 +381,13 @@
         <div style="margin-top:0.5rem;">
           <strong style="font-size:0.8rem;opacity:0.6;">Execute Prompt</strong>
           <pre id="execute-preview" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;">(loading execute.md...)</pre>
+        </div>
+        <div style="margin-top:1.5rem;">
+          <div style="margin-bottom:0.5rem;">
+            <button id="btn-refresh-workitems" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
+            <button id="btn-scrap-work" style="padding:0.3rem 0.8rem;font-size:0.8rem;background:#a33;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:2rem;">Scrap Work</button>
+          </div>
+          <pre id="br-list-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;opacity:0.7;background:var(--turn-bg);padding:0.5rem;border-radius:4px;">(click tab to load)</pre>
         </div>
       </div>
     </div>
