@@ -38,7 +38,6 @@ type Harness struct {
 	mu             sync.Mutex
 	running        bool
 	cmd            *exec.Cmd
-	contextFile    string
 	sessionID      string
 	demoFile       string // if set, replay this file instead of launching claude
 	commandDisplay string // pre-computed command string for the Command tab
@@ -48,14 +47,7 @@ type Harness struct {
 }
 
 func NewHarness() *Harness {
-	tmpFile, err := os.CreateTemp("", "agentbox-context-*.txt")
-	if err != nil {
-		log.Fatalf("failed to create context file: %v", err)
-	}
-	tmpFile.Close()
-
 	return &Harness{
-		contextFile:    tmpFile.Name(),
 		clients:        make(map[*sseClient]struct{}),
 		commandDisplay: formatCommand("claude", claudeArgs),
 	}
@@ -67,7 +59,6 @@ func (h *Harness) Cleanup() {
 	if h.cmd != nil && h.cmd.Process != nil {
 		h.cmd.Process.Kill()
 	}
-	os.Remove(h.contextFile)
 }
 
 // HandleSSE registers an SSE client and streams events.
@@ -177,23 +168,6 @@ func (h *Harness) HandleStop(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "stopping"})
 }
 
-// HandleClear wipes the context file and notifies clients.
-func (h *Harness) HandleClear(w http.ResponseWriter, r *http.Request) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if h.running {
-		http.Error(w, "cannot clear while running", http.StatusConflict)
-		return
-	}
-
-	os.Truncate(h.contextFile, 0)
-	h.sessionID = ""
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "cleared"})
-}
-
 // HandleState returns directory listings for Claude-related paths.
 func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 	home, _ := os.UserHomeDir()
@@ -289,18 +263,6 @@ func (h *Harness) HandleClaudeJSON(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(summary)
 }
 
-// HandleContext returns the current prompt context being sent to claude.
-func (h *Harness) HandleContext(w http.ResponseWriter, r *http.Request) {
-	data, _ := os.ReadFile(h.contextFile)
-	result := map[string]interface{}{
-		"context":    string(data),
-		"file_path":  h.contextFile,
-		"size_bytes": len(data),
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
-}
-
 // launch runs the claude CLI (or replays a demo file) and streams output.
 func (h *Harness) launch(prompt string) {
 	h.broadcast(UIEvent{Type: "status", Running: true})
@@ -312,15 +274,6 @@ func (h *Harness) launch(prompt string) {
 		h.mu.Unlock()
 		h.broadcast(UIEvent{Type: "status", Running: false})
 	}()
-
-	// Append user prompt to context file
-	f, err := os.OpenFile(h.contextFile, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("context file error: %v", err)})
-		return
-	}
-	fmt.Fprintf(f, "User: %s\n\n", prompt)
-	f.Close()
 
 	var reader io.Reader
 
@@ -344,15 +297,9 @@ func (h *Harness) launch(prompt string) {
 			log.Printf("clean claude.json: %v", err)
 		}
 
-		ctxBytes, err := os.ReadFile(h.contextFile)
-		if err != nil {
-			h.broadcast(UIEvent{Type: "error", Content: fmt.Sprintf("context read error: %v", err)})
-			return
-		}
-
 		args := make([]string, len(claudeArgs))
 		copy(args, claudeArgs)
-		args = append(args, "--", string(ctxBytes))
+		args = append(args, "--", prompt)
 		cmd := exec.Command("claude", args...)
 
 		var stderrBuf strings.Builder
@@ -390,8 +337,6 @@ func (h *Harness) processStream(reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 10*1024*1024) // 10MB max line
 
-	var contextBuf strings.Builder
-
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		if len(line) == 0 {
@@ -411,11 +356,6 @@ func (h *Harness) processStream(reader io.Reader) {
 			h.mu.Unlock()
 		}
 
-		// Build context entry (lean transcript)
-		if entry := BuildContextEntry(ev); entry != "" {
-			contextBuf.WriteString(entry)
-		}
-
 		// Transform and broadcast to SSE clients
 		for _, uiEvent := range TransformEvent(ev) {
 			h.broadcast(uiEvent)
@@ -427,14 +367,6 @@ func (h *Harness) processStream(reader io.Reader) {
 		}
 	}
 
-	// Append assistant output to context file
-	if contextBuf.Len() > 0 {
-		f, err := os.OpenFile(h.contextFile, os.O_APPEND|os.O_WRONLY, 0644)
-		if err == nil {
-			f.WriteString(contextBuf.String())
-			f.Close()
-		}
-	}
 }
 
 // cleanClaudeState removes ~/.claude (preserving credentials.json) and ~/.cache/claude.

@@ -6,10 +6,7 @@
   const promptInput = document.getElementById('prompt-input');
   const btnSend = document.getElementById('btn-send');
   const btnStop = document.getElementById('btn-stop');
-  const btnClear = document.getElementById('btn-clear');
   const btnCancelAnswer = document.getElementById('btn-cancel-answer');
-  const btnRefreshCtx = document.getElementById('btn-refresh-ctx');
-  const contextContent = document.getElementById('context-content');
   const scrollIndicator = document.getElementById('scroll-indicator');
   const systemContent = document.getElementById('system-content');
   const commandContent = document.getElementById('command-content');
@@ -37,7 +34,6 @@
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(tab.dataset.panel).classList.add('active');
-      if (tab.dataset.panel === 'context-panel') loadContext();
       if (tab.dataset.panel === 'state-panel') loadState();
     });
   });
@@ -105,39 +101,6 @@
   btnStop.addEventListener('click', () => {
     fetch('/api/stop', { method: 'POST' }).catch(() => {});
   });
-
-  // --- Clear ---
-  btnClear.addEventListener('click', () => {
-    if (isRunning) return;
-    fetch('/api/clear', { method: 'POST' }).then(() => {
-      const divider = document.createElement('div');
-      divider.className = 'context-cleared';
-      divider.textContent = '— Context cleared —';
-      outputPanel.appendChild(divider);
-      currentTurn = null;
-      loadContext();
-      doAutoScroll();
-    }).catch(() => {});
-  });
-
-  // --- Context tab refresh ---
-  btnRefreshCtx.addEventListener('click', loadContext);
-
-  function loadContext() {
-    fetch('/api/context')
-      .then(r => r.json())
-      .then(data => {
-        const size = data.size_bytes || 0;
-        const sizeStr = size < 1024 ? size + ' B' : (size / 1024).toFixed(1) + ' KB';
-        contextContent.innerHTML =
-          '<div style="font-family:var(--pico-font-family-monospace);font-size:0.78rem;opacity:0.6;margin-bottom:0.5rem">'
-          + esc(data.file_path || '') + '  (' + sizeStr + ')</div>'
-          + '<pre>' + esc(data.context || '(empty)') + '</pre>';
-      })
-      .catch(err => {
-        contextContent.innerHTML = '<pre>Error: ' + esc(err.message) + '</pre>';
-      });
-  }
 
   // --- State tab ---
   btnRefreshState.addEventListener('click', loadState);

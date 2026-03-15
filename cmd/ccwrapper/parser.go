@@ -303,46 +303,6 @@ func summarizeToolInput(toolName string, raw json.RawMessage) string {
 	return truncate(string(raw), 120)
 }
 
-// BuildContextEntry creates a lean text entry for the context file.
-func BuildContextEntry(ev *StreamEvent) string {
-	switch ev.Type {
-	case "assistant":
-		if ev.Message == nil {
-			return ""
-		}
-		var parts []string
-		for _, block := range ev.Message.Content {
-			switch block.Type {
-			case "text":
-				if t := strings.TrimSpace(block.Text); t != "" {
-					parts = append(parts, t)
-				}
-			case "tool_use":
-				parts = append(parts, fmt.Sprintf("Tool(%s): %s", block.Name, summarizeToolInput(block.Name, block.Input)))
-			}
-			// Skip thinking blocks from context
-		}
-		if len(parts) > 0 {
-			return "Assistant: " + strings.Join(parts, "\n") + "\n\n"
-		}
-
-	case "user":
-		if ev.Message == nil || ev.ToolUseResult == nil {
-			return ""
-		}
-		result := ev.ToolUseResult.Stdout
-		if result == "" {
-			result = ev.ToolUseResult.Stderr
-		}
-		lines := strings.Split(result, "\n")
-		if len(lines) > 3 {
-			lines = append(lines[:3], "...")
-		}
-		return "Result: " + strings.Join(lines, "\n") + "\n\n"
-	}
-	return ""
-}
-
 func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s

@@ -54,8 +54,6 @@ func main() {
 	mux.HandleFunc("GET /events", h.HandleSSE)
 	mux.HandleFunc("POST /api/prompt", h.HandlePrompt)
 	mux.HandleFunc("POST /api/stop", h.HandleStop)
-	mux.HandleFunc("POST /api/clear", h.HandleClear)
-	mux.HandleFunc("GET /api/context", h.HandleContext)
 	mux.HandleFunc("GET /api/state", h.HandleState)
 	mux.HandleFunc("GET /api/claude-json", h.HandleClaudeJSON)
 

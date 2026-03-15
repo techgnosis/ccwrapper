@@ -259,60 +259,6 @@
       opacity: 1;
     }
 
-    /* Context cleared divider */
-    .context-cleared {
-      text-align: center;
-      padding: 0.6rem 0;
-      margin: 0.8rem 0;
-      font-size: 0.85rem;
-      font-weight: 600;
-      opacity: 0.5;
-      border-top: 1px solid var(--pico-muted-border-color);
-      border-bottom: 1px solid var(--pico-muted-border-color);
-      font-family: var(--pico-font-family-monospace);
-    }
-
-    /* Context tab */
-    #context-panel {
-      display: none;
-      flex-direction: column;
-    }
-
-    #context-panel.active {
-      display: flex;
-    }
-
-    #context-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    #context-panel pre {
-      font-size: 0.78rem;
-      flex: 1;
-      overflow-y: auto;
-      margin: 0;
-    }
-
-    #context-panel h4 {
-      margin: 0.5rem 0 0.3rem;
-      font-size: 0.85rem;
-      opacity: 0.7;
-    }
-
-    .ctx-clear-wrap {
-      margin-bottom: 0.5rem;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .ctx-clear-wrap button {
-      padding: 0.3rem 0.8rem;
-      font-size: 0.8rem;
-    }
-
   </style>
 </head>
 <body>
@@ -326,7 +272,6 @@
 
   <div class="tabs">
     <div class="tab active" data-panel="output-panel">Output</div>
-    <div class="tab" data-panel="context-panel">Context</div>
     <div class="tab" data-panel="system-panel">System</div>
     <div class="tab" data-panel="command-panel">Command</div>
     <div class="tab" data-panel="state-panel">State</div>
@@ -335,14 +280,6 @@
   </div>
 
   <div id="output-panel" class="panel active"></div>
-
-  <div id="context-panel" class="panel">
-    <div class="ctx-clear-wrap">
-      <button id="btn-refresh-ctx">Refresh</button>
-      <button id="btn-clear">Clear Context</button>
-    </div>
-    <div id="context-content"></div>
-  </div>
 
   <div id="system-panel" class="panel">
     <pre id="system-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no system data yet — send a prompt first)</pre>
