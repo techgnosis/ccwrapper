@@ -114,8 +114,8 @@
       display: flex;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      border-top: 1px solid var(--pico-muted-border-color);
       align-items: center;
+      flex-shrink: 0;
     }
 
     #plan-toolbar .plan-hint {
@@ -336,11 +336,11 @@
       </div>
 
       <div id="plan-panel" class="panel active">
-        <textarea id="plan-editor" placeholder="Describe your project plan here..." autofocus></textarea>
         <div id="plan-toolbar">
           <span class="plan-hint">Your text will be appended to plan.md and sent to Claude</span>
           <button id="btn-send-plan">Send Plan</button>
         </div>
+        <textarea id="plan-editor" placeholder="Describe your project plan here..." autofocus></textarea>
       </div>
 
       <div id="refine-panel" class="panel">
