@@ -384,11 +384,12 @@
       </div>
 
       <div id="answer-panel" class="panel">
+        <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);flex-shrink:0;">Prepends prompts/answer.md to your answers</span>
+        <textarea id="answer-editor" placeholder="Edit the assistant's response and send your answers..." style="flex:1;margin:0;font-family:var(--pico-font-family-monospace);font-size:0.85rem;line-height:1.5;resize:none;border:none;border-radius:0;padding:0.8rem 1rem;background:var(--turn-bg);"></textarea>
         <div id="answer-toolbar" style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
-          <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);">Sends prompts/answer.md as the prompt</span>
+          <button id="btn-cancel-answers" style="margin:0;padding:0.5rem 1.5rem;" class="secondary">Cancel</button>
           <button id="btn-send-answers" style="margin:0;margin-left:auto;padding:0.5rem 1.5rem;">Send Answers</button>
         </div>
-        <textarea id="answer-editor" placeholder="Edit the assistant's response and send your answers..." style="flex:1;margin:0;font-family:var(--pico-font-family-monospace);font-size:0.85rem;line-height:1.5;resize:none;border:none;border-radius:0;padding:0.8rem 1rem;background:var(--turn-bg);"></textarea>
         <div style="margin-top:0.5rem;flex-shrink:0;overflow-y:auto;max-height:30%;">
           <strong style="font-size:0.8rem;opacity:0.6;">Answer Prompt</strong>
           <pre id="answer-preview" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;">(loading answer.md...)</pre>

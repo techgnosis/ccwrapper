@@ -22,6 +22,7 @@
   const answerEditor = document.getElementById('answer-editor');
   const answerPreview = document.getElementById('answer-preview');
   const btnSendAnswers = document.getElementById('btn-send-answers');
+  const btnCancelAnswers = document.getElementById('btn-cancel-answers');
 
   const tokenTotals = document.getElementById('token-totals');
 
@@ -206,6 +207,13 @@
 
   // --- Send answers ---
   btnSendAnswers.addEventListener('click', sendAnswers);
+
+  btnCancelAnswers.addEventListener('click', () => {
+    answerEditor.value = '';
+    answerTab.style.display = 'none';
+    answerTab.classList.remove('active');
+    document.getElementById('answer-panel').classList.remove('active');
+  });
 
   function sendAnswers() {
     const text = answerEditor.value.trim();
