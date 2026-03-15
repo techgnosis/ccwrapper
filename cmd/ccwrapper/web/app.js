@@ -318,34 +318,18 @@
   function collapseTurn(turn) {
     if (!turn) return;
     turn.classList.add('collapsed');
-    addAnswerButton(turn);
   }
 
-  function addAnswerButton(turn) {
-    // Only add once
-    if (turn.querySelector('.btn-answer')) return;
-    // Gather all text content from the turn
+  function autoPopulateRefineEditor(turn) {
     const textBlocks = turn.querySelectorAll('.turn-body .block-text');
     if (textBlocks.length === 0) return;
     const allText = Array.from(textBlocks).map(b => b.textContent).join('\n\n');
-    const btn = document.createElement('button');
-    btn.className = 'btn-answer';
-    btn.textContent = 'Answer Question';
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      answerQuestion(allText);
-    });
-    turn.querySelector('.turn-summary').appendChild(btn);
-  }
-
-  function answerQuestion(text) {
     // Switch to Refine tab and populate editor
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelector('[data-panel="refine-panel"]').classList.add('active');
     document.getElementById('refine-panel').classList.add('active');
-    // Populate and show the editor and Send Answers button
-    refineEditor.value = text;
+    refineEditor.value = allText;
     refineEditor.style.display = '';
     btnSendAnswers.style.display = '';
   }
@@ -435,7 +419,12 @@
           planEditor.disabled = isRunning;
           if (!isRunning) {
             removePending();
-            if (currentTurn) collapseTurn(currentTurn);
+            if (currentTurn) {
+              if (currentPrompt === 'refine') {
+                autoPopulateRefineEditor(currentTurn);
+              }
+              collapseTurn(currentTurn);
+            }
           }
           break;
 

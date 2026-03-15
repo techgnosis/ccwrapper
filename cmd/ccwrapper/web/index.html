@@ -164,7 +164,7 @@
       display: none;
     }
 
-    .panel.active:not(#plan-panel) {
+    .panel.active:not(#plan-panel):not(#refine-panel) {
       display: block;
     }
 
@@ -279,16 +279,15 @@
       margin-right: 1rem;
     }
 
-    /* Answer Question button */
-    .btn-answer {
-      font-size: 0.75rem;
-      padding: 0.2rem 0.6rem;
-      margin-left: 0.5rem;
-      opacity: 0.6;
-      cursor: pointer;
+    /* Refine panel layout */
+    #refine-panel {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
     }
-    .btn-answer:hover {
-      opacity: 1.0;
+    #refine-panel.active {
+      display: flex;
     }
 
     /* Pending indicator */
@@ -361,13 +360,13 @@
       </div>
 
       <div id="refine-panel" class="panel">
-        <div id="refine-toolbar" style="display:flex;gap:0.5rem;align-items:center;">
+        <div id="refine-toolbar" style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
           <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);">Sends prompts/refine.md as the prompt</span>
           <button id="btn-send-answers" style="margin:0;padding:0.5rem 1.5rem;display:none;">Send Answers</button>
           <button id="btn-send-refine" style="margin:0;margin-left:auto;padding:0.5rem 1.5rem;">Send Refine</button>
         </div>
-        <textarea id="refine-editor" placeholder="Edit the assistant's response and send your answers..." style="display:none;flex:1;margin:0;font-family:var(--pico-font-family-monospace);font-size:0.85rem;line-height:1.5;resize:none;border:none;border-radius:0;padding:0.8rem 1rem;background:var(--turn-bg);min-height:12rem;"></textarea>
-        <div style="margin-top:0.5rem;">
+        <textarea id="refine-editor" placeholder="Edit the assistant's response and send your answers..." style="display:none;flex:1;margin:0;font-family:var(--pico-font-family-monospace);font-size:0.85rem;line-height:1.5;resize:none;border:none;border-radius:0;padding:0.8rem 1rem;background:var(--turn-bg);"></textarea>
+        <div style="margin-top:0.5rem;flex-shrink:0;overflow-y:auto;max-height:30%;">
           <strong style="font-size:0.8rem;opacity:0.6;">Refine Prompt</strong>
           <pre id="refine-preview" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;">(loading refine.md...)</pre>
         </div>
