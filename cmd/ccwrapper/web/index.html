@@ -329,31 +329,10 @@
     <div class="left-panel">
       <div class="tabs">
         <div class="tab active" data-panel="plan-panel">Plan</div>
-        <div class="tab" data-panel="system-panel">System</div>
-        <div class="tab" data-panel="command-panel">Command</div>
-        <div class="tab" data-panel="state-panel">State</div>
         <div class="tab" data-panel="refine-panel">Refine</div>
         <div class="tab" id="answer-tab" data-panel="answer-panel" style="display:none;">Answer</div>
         <div class="tab" data-panel="execute-panel">Execute</div>
         <span id="token-totals" style="margin-left:auto;font-size:0.75rem;opacity:0.5;padding:0.4rem 0.5rem;font-family:var(--pico-font-family-monospace);white-space:nowrap;"></span>
-      </div>
-
-      <div id="system-panel" class="panel">
-        <pre id="system-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no system data yet — send a prompt first)</pre>
-      </div>
-
-      <div id="command-panel" class="panel">
-        <pre id="command-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no command yet — send a prompt first)</pre>
-      </div>
-
-      <div id="state-panel" class="panel">
-        <div style="margin-bottom:0.5rem;">
-          <button id="btn-refresh-state" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
-        </div>
-        <div style="display:flex;gap:1rem;flex:1;min-height:0;">
-          <div id="state-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;"></div>
-          <div id="claude-json-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;border-left:1px solid var(--pico-muted-border-color);padding-left:1rem;"></div>
-        </div>
       </div>
 
       <div id="plan-panel" class="panel active">
@@ -410,8 +389,29 @@
     <div class="right-panel">
       <div class="tabs right-tabs">
         <div class="tab active" data-panel="output-panel">Output</div>
+        <div class="tab" data-panel="system-panel">System</div>
+        <div class="tab" data-panel="command-panel">Command</div>
+        <div class="tab" data-panel="state-panel">State</div>
       </div>
       <div id="output-panel" class="panel active"></div>
+
+      <div id="system-panel" class="panel">
+        <pre id="system-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no system data yet — send a prompt first)</pre>
+      </div>
+
+      <div id="command-panel" class="panel">
+        <pre id="command-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">(no command yet — send a prompt first)</pre>
+      </div>
+
+      <div id="state-panel" class="panel">
+        <div style="margin-bottom:0.5rem;">
+          <button id="btn-refresh-state" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
+        </div>
+        <div style="display:flex;gap:1rem;flex:1;min-height:0;">
+          <div id="state-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;"></div>
+          <div id="claude-json-content" style="flex:1;font-family:var(--pico-font-family-monospace);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;overflow:auto;border-left:1px solid var(--pico-muted-border-color);padding-left:1rem;"></div>
+        </div>
+      </div>
       <span id="scroll-indicator">scroll: on</span>
     </div>
   </div>

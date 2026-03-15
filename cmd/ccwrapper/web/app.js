@@ -373,8 +373,9 @@
     const allText = Array.from(textBlocks).map(b => b.textContent).join('\n\n');
     // Show the Answer tab and switch to it
     answerTab.style.display = '';
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    const leftPanel = document.querySelector('.left-panel');
+    leftPanel.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    leftPanel.querySelectorAll(':scope > .panel').forEach(p => p.classList.remove('active'));
     answerTab.classList.add('active');
     document.getElementById('answer-panel').classList.add('active');
     answerEditor.value = allText;
