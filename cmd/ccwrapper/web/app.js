@@ -18,7 +18,9 @@
   const btnScrapWork = document.getElementById('btn-scrap-work');
   const btnSendRefine = document.getElementById('btn-send-refine');
   const refinePreview = document.getElementById('refine-preview');
-  const refineEditor = document.getElementById('refine-editor');
+  const answerTab = document.getElementById('answer-tab');
+  const answerEditor = document.getElementById('answer-editor');
+  const answerPreview = document.getElementById('answer-preview');
   const btnSendAnswers = document.getElementById('btn-send-answers');
 
   const tokenTotals = document.getElementById('token-totals');
@@ -171,8 +173,14 @@
   function loadAnswerMd() {
     fetch('/api/prompts/answer')
       .then(r => r.json())
-      .then(data => { answerMdContents = data.content || ''; })
-      .catch(() => { answerMdContents = ''; });
+      .then(data => {
+        answerMdContents = data.content || '';
+        answerPreview.textContent = answerMdContents || '(answer.md is empty)';
+      })
+      .catch(() => {
+        answerMdContents = '';
+        answerPreview.textContent = '(failed to load answer.md)';
+      });
   }
   loadAnswerMd();
 
@@ -200,19 +208,10 @@
   btnSendAnswers.addEventListener('click', sendAnswers);
 
   function sendAnswers() {
-    const text = refineEditor.value.trim();
+    const text = answerEditor.value.trim();
     if (!text || isRunning) return;
 
     currentPrompt = 'answers';
-
-    // Hide editor and button
-    refineEditor.style.display = 'none';
-    btnSendAnswers.style.display = 'none';
-
-    // Restore Send Refine button and swap preview back to refine.md
-    btnSendRefine.style.display = '';
-    refinePreview.textContent = refineMdContents || '(refine.md is empty)';
-    document.querySelector('#refine-toolbar span').textContent = 'Sends prompts/refine.md as the prompt';
 
     // Prepend answer.md contents to the prompt
     const prompt = answerMdContents ? answerMdContents + '\n\n' + text : text;
@@ -354,23 +353,17 @@
     turn.classList.add('collapsed');
   }
 
-  function autoPopulateRefineEditor(turn) {
+  function autoPopulateAnswerEditor(turn) {
     const textBlocks = turn.querySelectorAll('.turn-body .block-text');
     if (textBlocks.length === 0) return;
     const allText = Array.from(textBlocks).map(b => b.textContent).join('\n\n');
-    // Switch to Refine tab and populate editor
+    // Show the Answer tab and switch to it
+    answerTab.style.display = '';
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.querySelector('[data-panel="refine-panel"]').classList.add('active');
-    document.getElementById('refine-panel').classList.add('active');
-    refineEditor.value = allText;
-    refineEditor.style.display = '';
-    btnSendAnswers.style.display = '';
-    // Hide Send Refine until answers are sent
-    btnSendRefine.style.display = 'none';
-    // Swap preview to answer.md
-    refinePreview.textContent = answerMdContents || '(answer.md is empty)';
-    document.querySelector('#refine-toolbar span').textContent = 'Sends prompts/answer.md as the prompt';
+    answerTab.classList.add('active');
+    document.getElementById('answer-panel').classList.add('active');
+    answerEditor.value = allText;
   }
 
   function addBlock(turn, type, content, extra) {
@@ -462,7 +455,7 @@
             removePending();
             if (currentTurn) {
               if (currentPrompt === 'refine') {
-                autoPopulateRefineEditor(currentTurn);
+                autoPopulateAnswerEditor(currentTurn);
               }
               collapseTurn(currentTurn);
             }
