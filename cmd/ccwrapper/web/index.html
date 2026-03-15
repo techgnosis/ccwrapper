@@ -320,6 +320,7 @@
         <div class="tab" data-panel="system-panel">System</div>
         <div class="tab" data-panel="command-panel">Command</div>
         <div class="tab" data-panel="state-panel">State</div>
+        <div class="tab" data-panel="workitems-panel">Work Items</div>
         <div class="tab" data-panel="refine-panel">Refine</div>
         <div class="tab" data-panel="execute-panel">Execute</div>
         <span id="token-totals" style="margin-left:auto;font-size:0.75rem;opacity:0.5;padding:0.4rem 0.5rem;font-family:var(--pico-font-family-monospace);white-space:nowrap;"></span>
@@ -351,6 +352,13 @@
         </div>
       </div>
 
+      <div id="workitems-panel" class="panel">
+        <div style="margin-bottom:0.5rem;">
+          <button id="btn-refresh-workitems" style="padding:0.3rem 0.8rem;font-size:0.8rem;">Refresh</button>
+        </div>
+        <pre id="br-list-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;opacity:0.7;background:var(--turn-bg);padding:0.5rem;border-radius:4px;">(click tab to load)</pre>
+      </div>
+
       <div id="refine-panel" class="panel">
         <div id="refine-toolbar" style="display:flex;gap:0.5rem;align-items:center;">
           <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);">Sends prompts/refine.md as the prompt</span>
@@ -358,10 +366,6 @@
           <button id="btn-send-refine" style="margin:0;margin-left:auto;padding:0.5rem 1.5rem;">Send Refine</button>
         </div>
         <textarea id="refine-editor" placeholder="Edit the assistant's response and send your answers..." style="display:none;flex:1;margin:0;font-family:var(--pico-font-family-monospace);font-size:0.85rem;line-height:1.5;resize:none;border:none;border-radius:0;padding:0.8rem 1rem;background:var(--turn-bg);min-height:12rem;"></textarea>
-        <div style="margin-top:0.5rem;">
-          <strong style="font-size:0.8rem;opacity:0.6;">Work Items (br list)</strong>
-          <pre id="br-list-content-refine" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;background:var(--turn-bg);padding:0.5rem;border-radius:4px;">(loading...)</pre>
-        </div>
         <div style="margin-top:0.5rem;">
           <strong style="font-size:0.8rem;opacity:0.6;">Refine Prompt</strong>
           <pre id="refine-preview" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;">(loading refine.md...)</pre>
@@ -372,10 +376,6 @@
         <div id="execute-toolbar" style="display:flex;gap:0.5rem;align-items:center;">
           <span style="font-size:0.75rem;opacity:0.5;font-family:var(--pico-font-family-monospace);">Sends prompts/execute.md as the prompt</span>
           <button id="btn-send-execute" style="margin:0;margin-left:auto;padding:0.5rem 1.5rem;">Send Execute</button>
-        </div>
-        <div style="margin-top:0.5rem;">
-          <strong style="font-size:0.8rem;opacity:0.6;">Work Items (br list)</strong>
-          <pre id="br-list-content" style="font-size:0.78rem;white-space:pre-wrap;word-break:break-word;margin-top:0.3rem;opacity:0.7;background:var(--turn-bg);padding:0.5rem;border-radius:4px;">(loading...)</pre>
         </div>
         <div style="margin-top:0.5rem;">
           <strong style="font-size:0.8rem;opacity:0.6;">Execute Prompt</strong>

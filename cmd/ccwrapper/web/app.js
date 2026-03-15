@@ -14,9 +14,9 @@
   const btnSendExecute = document.getElementById('btn-send-execute');
   const executePreview = document.getElementById('execute-preview');
   const brListContent = document.getElementById('br-list-content');
+  const btnRefreshWorkitems = document.getElementById('btn-refresh-workitems');
   const btnSendRefine = document.getElementById('btn-send-refine');
   const refinePreview = document.getElementById('refine-preview');
-  const brListContentRefine = document.getElementById('br-list-content-refine');
   const refineEditor = document.getElementById('refine-editor');
   const btnSendAnswers = document.getElementById('btn-send-answers');
 
@@ -43,8 +43,7 @@
       tab.classList.add('active');
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'state-panel') loadState();
-      if (tab.dataset.panel === 'execute-panel') loadBrList();
-      if (tab.dataset.panel === 'refine-panel') loadBrListRefine();
+      if (tab.dataset.panel === 'workitems-panel') loadBrList();
     });
   });
 
@@ -99,7 +98,9 @@
         brListContent.textContent = '(failed to load br list)';
       });
   }
-  loadBrList();
+
+  // --- Refresh button for Work Items panel ---
+  btnRefreshWorkitems.addEventListener('click', loadBrList);
 
   // --- Load execute.md from server ---
   function loadExecuteMd() {
@@ -115,19 +116,6 @@
       });
   }
   loadExecuteMd();
-
-  // --- Load br list for refine panel ---
-  function loadBrListRefine() {
-    fetch('/api/br-list')
-      .then(r => r.json())
-      .then(data => {
-        brListContentRefine.textContent = data.output || '(no work items)';
-      })
-      .catch(() => {
-        brListContentRefine.textContent = '(failed to load br list)';
-      });
-  }
-  loadBrListRefine();
 
   // --- Load refine.md from server ---
   function loadRefineMd() {
@@ -338,7 +326,6 @@
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelector('[data-panel="refine-panel"]').classList.add('active');
     document.getElementById('refine-panel').classList.add('active');
-    loadBrListRefine();
     // Populate and show the editor and Send Answers button
     refineEditor.value = text;
     refineEditor.style.display = '';
