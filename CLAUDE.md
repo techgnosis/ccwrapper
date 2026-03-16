@@ -44,6 +44,8 @@ br sync --status      # Check sync status
 - **Types**: task, bug, feature, epic, chore, docs, question
 - **Blocking**: `br dep add <issue> <depends-on>` to add dependencies
 
+TASKS BLOCK EPICS. EPICS DO NOT BLOCK TASKS
+
 ### Session Protocol
 
 **Before ending any session, run this checklist:**
