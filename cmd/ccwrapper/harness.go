@@ -39,7 +39,6 @@ type Harness struct {
 	running        bool
 	cmd            *exec.Cmd
 	sessionID      string
-	demoFile       string // if set, replay this file instead of launching claude
 	commandDisplay string // pre-computed command string for the Command tab
 
 	clientsMu sync.Mutex

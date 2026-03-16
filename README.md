@@ -50,9 +50,6 @@ GOOS=darwin GOARCH=arm64 go build .
 # Start the server (requires `claude` CLI on PATH)
 ./ccwrapper
 # Listens on 0.0.0.0:8080
-
-# Replay a saved stream-json file for testing
-./ccwrapper --demo example.json
 ```
 
 ## Claude CLI flags

@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"os/exec"
 	"strings"
-	"time"
 )
 
-// launch runs the claude CLI (or replays a demo file) and streams output.
+// launch runs the claude CLI and streams output.
 func (h *Harness) launch(prompt string) {
 	h.broadcast(UIEvent{Type: UITypeStatus, Running: true})
 
@@ -23,61 +21,46 @@ func (h *Harness) launch(prompt string) {
 		h.broadcast(UIEvent{Type: UITypeStatus, Running: false})
 	}()
 
-	var reader io.Reader
-
-	if h.demoFile != "" {
-		// Demo mode: replay file with a small delay per line
-		demoF, err := os.Open(h.demoFile)
-		if err != nil {
-			h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("demo file error: %v", err)})
-			return
-		}
-		defer demoF.Close()
-		reader = demoF
-	} else {
-		// Real mode: clean state then launch claude CLI
-		if err := cleanClaudeState(); err != nil {
-			log.Printf("clean claude state: %v", err)
-		}
-
-		// Strip ~/.claude.json to only userID and oauthAccount
-		if err := cleanClaudeJSON(); err != nil {
-			log.Printf("clean claude.json: %v", err)
-		}
-
-		args := make([]string, len(claudeArgs))
-		copy(args, claudeArgs)
-		args = append(args, "--", prompt)
-		cmd := exec.Command("claude", args...)
-
-		var stderrBuf strings.Builder
-		cmd.Stderr = &stderrBuf
-
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("pipe error: %v", err)})
-			return
-		}
-
-		h.mu.Lock()
-		h.cmd = cmd
-		h.mu.Unlock()
-
-		if err := cmd.Start(); err != nil {
-			h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("start error: %v", err)})
-			return
-		}
-		defer func() {
-			cmd.Wait()
-			if s := strings.TrimSpace(stderrBuf.String()); s != "" {
-				log.Printf("claude stderr: %s", s)
-				h.broadcast(UIEvent{Type: UITypeError, Content: "claude stderr: " + s})
-			}
-		}()
-		reader = stdout
+	if err := cleanClaudeState(); err != nil {
+		log.Printf("clean claude state: %v", err)
 	}
 
-	h.processStream(reader)
+	// Strip ~/.claude.json to only userID and oauthAccount
+	if err := cleanClaudeJSON(); err != nil {
+		log.Printf("clean claude.json: %v", err)
+	}
+
+	args := make([]string, len(claudeArgs))
+	copy(args, claudeArgs)
+	args = append(args, "--", prompt)
+	cmd := exec.Command("claude", args...)
+
+	var stderrBuf strings.Builder
+	cmd.Stderr = &stderrBuf
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("pipe error: %v", err)})
+		return
+	}
+
+	h.mu.Lock()
+	h.cmd = cmd
+	h.mu.Unlock()
+
+	if err := cmd.Start(); err != nil {
+		h.broadcast(UIEvent{Type: UITypeError, Content: fmt.Sprintf("start error: %v", err)})
+		return
+	}
+	defer func() {
+		cmd.Wait()
+		if s := strings.TrimSpace(stderrBuf.String()); s != "" {
+			log.Printf("claude stderr: %s", s)
+			h.broadcast(UIEvent{Type: UITypeError, Content: "claude stderr: " + s})
+		}
+	}()
+
+	h.processStream(stdout)
 }
 
 // processStream reads stream-json lines from a reader and broadcasts events.
@@ -109,10 +92,6 @@ func (h *Harness) processStream(reader io.Reader) {
 			h.broadcast(uiEvent)
 		}
 
-		// Small delay in demo mode for visual effect
-		if h.demoFile != "" {
-			time.Sleep(150 * time.Millisecond)
-		}
 	}
 
 	if err := scanner.Err(); err != nil {

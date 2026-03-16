@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"flag"
 	"fmt"
 	"io/fs"
 	"log"
@@ -16,9 +15,6 @@ import (
 var webFS embed.FS
 
 func main() {
-	demoFile := flag.String("demo", "", "replay a stream-json file instead of launching claude")
-	flag.Parse()
-
 	// Clean claude state on startup
 	if err := cleanClaudeState(); err != nil {
 		log.Printf("clean claude state on startup: %v", err)
@@ -28,10 +24,6 @@ func main() {
 	}
 
 	h := NewHarness()
-	if *demoFile != "" {
-		h.demoFile = *demoFile
-		fmt.Printf("demo mode: replaying %s\n", *demoFile)
-	}
 	defer h.Cleanup()
 
 	// Cleanup on signal
