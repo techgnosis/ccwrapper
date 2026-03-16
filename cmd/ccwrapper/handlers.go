@@ -250,6 +250,12 @@ func (h *Harness) HandleBrScrap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sync JSONL after delete so issues.jsonl stays in sync with the SQLite DB.
+	syncCmd := exec.Command("br", "sync", "--flush-only", "--force")
+	if syncOut, syncErr := syncCmd.CombinedOutput(); syncErr != nil {
+		log.Printf("WARNING: br sync after scrap failed: %v: %s", syncErr, string(syncOut))
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"deleted": len(ids),
