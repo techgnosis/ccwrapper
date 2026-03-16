@@ -321,7 +321,6 @@
       case EventType.TEXT:
         block.classList.add('block-text');
         block.textContent = content;
-        updateTurnResponse(turn, content);
         break;
 
       case EventType.THINKING:
@@ -357,15 +356,6 @@
 
     body.appendChild(block);
     showPending();
-  }
-
-  function updateTurnResponse(turn, text) {
-    const summary = turn.querySelector('.turn-summary');
-    const promptText = summary.querySelector('.label').nextSibling;
-    const userText = promptText ? promptText.textContent : '';
-    const truncated = text.length > 120 ? text.substring(0, 120) + '...' : text;
-    summary.innerHTML = '<span class="label">user</span>' + esc(currentPrompt || userText)
-      + '<br><span class="label">assistant</span>' + esc(truncated);
   }
 
   // Map tool IDs to their parent turn for indenting results
