@@ -53,7 +53,6 @@ func main() {
 	mux.Handle("GET /", http.FileServer(http.FS(webSub)))
 	mux.HandleFunc("GET /events", h.HandleSSE)
 	mux.HandleFunc("POST /api/prompt", h.HandlePrompt)
-	mux.HandleFunc("POST /api/stop", h.HandleStop)
 	mux.HandleFunc("GET /api/state", h.HandleState)
 	mux.HandleFunc("GET /api/claude-json", h.HandleClaudeJSON)
 	mux.HandleFunc("GET /api/prompts/{name}", h.HandlePromptFile)

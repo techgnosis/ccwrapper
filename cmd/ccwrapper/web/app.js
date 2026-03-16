@@ -16,7 +16,6 @@
   };
 
   const outputPanel = document.getElementById('output-panel');
-  const btnStop = document.getElementById('btn-stop');
   const scrollIndicator = document.getElementById('scroll-indicator');
   const systemContent = document.getElementById('system-content');
   const commandContent = document.getElementById('command-content');
@@ -216,11 +215,6 @@
     sendPrompt(userText, prompt);
   });
 
-  // --- Stop ---
-  btnStop.addEventListener('click', () => {
-    fetch('/api/stop', { method: 'POST' }).catch(() => {});
-  });
-
   // --- State tab ---
   btnRefreshState.addEventListener('click', loadState);
   function loadState() {
@@ -392,7 +386,6 @@
       switch (data.type) {
         case EventType.STATUS:
           isRunning = data.running;
-          btnStop.style.display = isRunning ? '' : 'none';
           btnSendExecute.disabled = isRunning;
           btnSendRefine.disabled = isRunning;
           btnSendAnswers.disabled = isRunning;

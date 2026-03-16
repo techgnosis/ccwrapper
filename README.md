@@ -25,7 +25,6 @@ Before each run, ccwrapper wipes Claude's internal state (`~/.claude/`, `~/.cach
 - **State** — Directory listings for `~/.claude/` and `~/.cache/`, plus a `~/.claude.json` summary.
 - **Token totals** — Running input/output token counts and cost displayed in the tab bar, accumulated across all runs in the session.
 - Press **`s`** to toggle auto-scroll.
-- **Stop** button to kill a running Claude process.
 
 ## Prompt files
 

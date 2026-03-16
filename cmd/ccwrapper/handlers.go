@@ -95,21 +95,6 @@ func (h *Harness) HandlePrompt(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "started"})
 }
 
-// HandleStop kills the running claude process.
-func (h *Harness) HandleStop(w http.ResponseWriter, r *http.Request) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if !h.running || h.cmd == nil || h.cmd.Process == nil {
-		jsonError(w, "not running", http.StatusConflict)
-		return
-	}
-
-	h.cmd.Process.Signal(os.Interrupt)
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "stopping"})
-}
-
 // HandleState returns directory listings for Claude-related paths.
 func (h *Harness) HandleState(w http.ResponseWriter, r *http.Request) {
 	home, _ := os.UserHomeDir()
