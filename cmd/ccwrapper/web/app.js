@@ -40,6 +40,7 @@
   const tokenTotals = document.getElementById('token-totals');
 
   let autoScroll = true;
+  let showResults = false;
   let isRunning = false;
   let currentTurn = null;
   let currentPrompt = null;
@@ -68,11 +69,22 @@
   initTabGroup('.left-panel > .tabs', '.left-panel');
   initTabGroup('.right-panel > .tabs', '.right-panel');
 
+  function updateIndicator() {
+    scrollIndicator.textContent = 'scroll: ' + (autoScroll ? 'on' : 'off') + " ('s')  |  results: " + (showResults ? 'on' : 'off') + " ('r')";
+  }
+  updateIndicator();
+
   // --- Auto-scroll toggle ('s' key) ---
   document.addEventListener('keydown', e => {
-    if (e.key === 's' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+    if (e.key === 's') {
       autoScroll = !autoScroll;
-      scrollIndicator.textContent = 'scroll: ' + (autoScroll ? 'on' : 'off') + "  |  's' to toggle";
+      updateIndicator();
+    }
+    if (e.key === 'r') {
+      showResults = !showResults;
+      outputPanel.classList.toggle('hide-results', !showResults);
+      updateIndicator();
     }
   });
 

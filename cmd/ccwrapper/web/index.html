@@ -242,6 +242,10 @@
       border-left-color: tomato;
     }
 
+    #output-panel.hide-results .block-result {
+      display: none;
+    }
+
     .block-result-summary {
       background: rgba(50,205,50,0.08);
       border-top: 1px solid var(--pico-muted-border-color);
@@ -417,7 +421,7 @@
         <div class="tab" data-panel="command-panel">Command</div>
         <div class="tab" data-panel="state-panel">State</div>
       </div>
-      <div id="output-panel" class="panel active"></div>
+      <div id="output-panel" class="panel active hide-results"></div>
 
       <div id="system-panel" class="panel">
         <pre id="system-content" class="pre-content">(no system data yet — send a prompt first)</pre>
