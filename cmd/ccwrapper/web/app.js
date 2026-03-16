@@ -72,7 +72,7 @@
   document.addEventListener('keydown', e => {
     if (e.key === 's' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
       autoScroll = !autoScroll;
-      scrollIndicator.textContent = 'scroll: ' + (autoScroll ? 'on' : 'off');
+      scrollIndicator.textContent = 'scroll: ' + (autoScroll ? 'on' : 'off') + "  |  's' to toggle";
     }
   });
 
