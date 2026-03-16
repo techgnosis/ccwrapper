@@ -48,7 +48,7 @@ func cleanClaudeState() error {
 	return nil
 }
 
-// cleanClaudeJSON strips ~/.claude.json down to only userID and oauthAccount.
+// cleanClaudeJSON strips ~/.claude.json down to only oauthAccount.
 func cleanClaudeJSON() error {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -70,7 +70,7 @@ func cleanClaudeJSON() error {
 	}
 
 	keep := make(map[string]json.RawMessage)
-	for _, key := range []string{"userID", "oauthAccount"} {
+	for _, key := range []string{"oauthAccount"} {
 		if v, ok := full[key]; ok {
 			keep[key] = v
 		}
